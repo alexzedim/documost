@@ -1,6 +1,6 @@
 // /ee/ai/ai.module.ts
 import { Module } from '@nestjs/common';
-import { AiController } from './controllers/ai.controller';
+import { AiController } from './ai.controller';
 import { AiService } from './services/ai.service';
 import { AiSearchService } from './services/ai-search.service';
 

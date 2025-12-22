@@ -1,5 +1,12 @@
 // /ee/api-key/api-key.controller.ts
-import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { ApiKeyService } from '../services/api-key.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { AuthUser } from '../../../common/decorators/auth-user.decorator';
@@ -13,7 +20,10 @@ export class ApiKeyController {
 
   @HttpCode(HttpStatus.OK)
   @Post()
-  async getApiKeys(@AuthWorkspace() workspace: Workspace, @Body() params?: any) {
+  async getApiKeys(
+    @AuthWorkspace() workspace: Workspace,
+    @Body() params?: any,
+  ) {
     return this.apiKeyService.getApiKeys(workspace.id, params);
   }
 
@@ -35,7 +45,10 @@ export class ApiKeyController {
 
   @HttpCode(HttpStatus.OK)
   @Post('revoke')
-  async revokeApiKey(@AuthWorkspace() workspace: Workspace, @Body() data: { apiKeyId: string }) {
+  async revokeApiKey(
+    @AuthWorkspace() workspace: Workspace,
+    @Body() data: { apiKeyId: string },
+  ) {
     return this.apiKeyService.revokeApiKey(data.apiKeyId, workspace.id);
   }
 }

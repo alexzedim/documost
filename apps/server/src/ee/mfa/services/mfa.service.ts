@@ -1,10 +1,14 @@
 // /ee/mfa/services/mfa.service.ts
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
 import { KyselyDB } from '@docmost/db/types/kysely.types';
 import * as speakeasy from 'speakeasy';
 import * as qrcode from 'qrcode';
-import * as bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcrypt';
 import { Workspace } from '@docmost/db/types/entity.types';
 import { FastifyReply } from 'fastify';
 import { JwtService } from '@nestjs/jwt';
@@ -32,7 +36,10 @@ export class MfaService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const passwordValid = await bcrypt.compare(loginInput.password, user.password);
+    const passwordValid = await bcrypt.compare(
+      loginInput.password,
+      user.password,
+    );
     if (!passwordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -70,7 +77,7 @@ export class MfaService {
 
   async getMfaSettings(userId: string): Promise<any> {
     const mfa = await this.db
-      .selectFrom('mfaSettings')
+      .selectFrom('userMfa')
       .selectAll()
       .where('userId', '=', userId)
       .executeTakeFirst();
@@ -98,14 +105,16 @@ export class MfaService {
 
     // Store temporary secret (not yet enabled)
     await this.db
-      .insertInto('mfaSetup')
+      .insertInto('userMfa')
       .values({
         userId,
         secret: secret.base32,
         method: 'totp',
         createdAt: new Date(),
       })
-      .onConflict((oc) => oc.column('userId').doUpdateSet({ secret: secret.base32 }))
+      .onConflict((oc) =>
+        oc.column('userId').doUpdateSet({ secret: secret.base32 }),
+      )
       .execute();
 
     return {
@@ -116,7 +125,11 @@ export class MfaService {
     };
   }
 
-  async enableMfa(userId: string, secret: string, verificationCode: string): Promise<any> {
+  async enableMfa(
+    userId: string,
+    secret: string,
+    verificationCode: string,
+  ): Promise<any> {
     const verified = speakeasy.totp.verify({
       secret,
       encoding: 'base32',
@@ -131,31 +144,30 @@ export class MfaService {
     // Generate backup codes
     const backupCodes = this.generateBackupCodes(10);
     const hashedBackupCodes = await Promise.all(
-      backupCodes.map(code => bcrypt.hash(code, 10))
+      backupCodes.map((code) => bcrypt.hash(code, 10)),
     );
 
     await this.db
-      .insertInto('mfaSettings')
+      .insertInto('userMfa')
       .values({
         userId,
         secret,
         method: 'totp',
         isEnabled: true,
-        backupCodes: JSON.stringify(hashedBackupCodes),
+        backupCodes: hashedBackupCodes,
         createdAt: new Date(),
       })
-      .onConflict((oc) => oc.column('userId').doUpdateSet({
-        secret,
-        isEnabled: true,
-        backupCodes: JSON.stringify(hashedBackupCodes),
-      }))
+      .onConflict((oc) =>
+        oc.column('userId').doUpdateSet({
+          secret,
+          isEnabled: true,
+          backupCodes: hashedBackupCodes,
+        }),
+      )
       .execute();
 
     // Clean up setup data
-    await this.db
-      .deleteFrom('mfaSetup')
-      .where('userId', '=', userId)
-      .execute();
+    await this.db.deleteFrom('userMfa').where('userId', '=', userId).execute();
 
     return {
       success: true,
@@ -177,10 +189,7 @@ export class MfaService {
       }
     }
 
-    await this.db
-      .deleteFrom('mfaSettings')
-      .where('userId', '=', userId)
-      .execute();
+    await this.db.deleteFrom('userMfa').where('userId', '=', userId).execute();
 
     return { success: true };
   }
@@ -208,10 +217,10 @@ export class MfaService {
     for (const hashedCode of backupCodes) {
       if (await bcrypt.compare(code, hashedCode)) {
         // Remove used backup code
-        const updatedCodes = backupCodes.filter(c => c !== hashedCode);
+        const updatedCodes = backupCodes.filter((c) => c !== hashedCode);
         await this.db
-          .updateTable('mfaSettings')
-          .set({ backupCodes: JSON.stringify(updatedCodes) })
+          .updateTable('userMfa')
+          .set({ backupCodes: updatedCodes })
           .where('userId', '=', userId)
           .execute();
         return true;
@@ -233,12 +242,12 @@ export class MfaService {
   async regenerateBackupCodes(userId: string): Promise<string[]> {
     const backupCodes = this.generateBackupCodes(10);
     const hashedBackupCodes = await Promise.all(
-      backupCodes.map(code => bcrypt.hash(code, 10))
+      backupCodes.map((code) => bcrypt.hash(code, 10)),
     );
 
     await this.db
-      .updateTable('mfaSettings')
-      .set({ backupCodes: JSON.stringify(hashedBackupCodes) })
+      .updateTable('userMfa')
+      .set({ backupCodes: hashedBackupCodes })
       .where('userId', '=', userId)
       .execute();
 

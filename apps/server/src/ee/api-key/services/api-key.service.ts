@@ -17,27 +17,54 @@ export class ApiKeyService {
     private readonly userRepo: UserRepo,
   ) {}
 
-  async createApiKey(data: any, userId: string, workspaceId: string): Promise<any> {
+  async createApiKey(
+    data: any,
+    userId: string,
+    workspaceId: string,
+  ): Promise<any> {
     const token = this.generateApiKeyToken();
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
-    const apiKey = await this.db
-      .insertInto('apiKeys')
+    const userToken = await this.db
+      .insertInto('userTokens')
       .values({
         id: crypto.randomUUID(),
-        name: data.name,
         token: hashedToken,
-        creatorId: userId,
-        workspaceId,
+        type: 'api_key',
+        userId: userId,
+        workspaceId: workspaceId,
         expiresAt: data.expiresAt || null,
-        createdAt: new Date(),
       })
       .returningAll()
       .executeTakeFirst();
 
+    const apiKey = await this.db
+      .insertInto('apiKeys')
+      .values({
+        id: userToken.id,
+        name: data.name || null,
+        creatorId: userId,
+        workspaceId: workspaceId,
+        expiresAt: data.expiresAt || null,
+      })
+      .returningAll()
+      .executeTakeFirst();
+
+    const creator = await this.db
+      .selectFrom('users')
+      .select(['id', 'name', 'avatarUrl'])
+      .where('id', '=', userId)
+      .executeTakeFirst();
+
     return {
-      ...apiKey,
-      token, // Only return the plain token on creation
+      id: apiKey.id,
+      name: apiKey.name || 'API Key',
+      token: token,
+      createdAt: apiKey.createdAt,
+      expiresAt: apiKey.expiresAt,
+      lastUsedAt: apiKey.lastUsedAt,
+      creatorId: apiKey.creatorId,
+      creator: creator || null,
     };
   }
 
@@ -49,22 +76,75 @@ export class ApiKeyService {
       .where('deletedAt', 'is', null)
       .execute();
 
+    const userIds = [...new Set(apiKeys.map((key) => key.creatorId))];
+    const users = await this.db
+      .selectFrom('users')
+      .select(['id', 'name', 'avatarUrl'])
+      .where('id', 'in', userIds)
+      .execute();
+
+    const userMap = new Map(users.map((user) => [user.id, user]));
+
+    const items = apiKeys.map((key) => ({
+      id: key.id,
+      name: key.name || 'API Key',
+      createdAt: key.createdAt,
+      expiresAt: key.expiresAt,
+      lastUsedAt: key.lastUsedAt,
+      creatorId: key.creatorId,
+      creator: userMap.get(key.creatorId) || null,
+    }));
+
     return {
-      data: apiKeys.map(key => ({ ...key, token: undefined })),
-      total: apiKeys.length,
+      items,
+      meta: {
+        total: items.length,
+        hasPrevPage: false,
+        hasNextPage: false,
+      },
     };
   }
 
   async updateApiKey(data: any, workspaceId: string): Promise<any> {
     const apiKey = await this.db
       .updateTable('apiKeys')
-      .set({ name: data.name, updatedAt: new Date() })
+      .set({
+        name: data.name,
+        expiresAt: data.expiresAt,
+      })
       .where('id', '=', data.apiKeyId)
       .where('workspaceId', '=', workspaceId)
       .returningAll()
       .executeTakeFirst();
 
-    return { ...apiKey, token: undefined };
+    if (!apiKey) return null;
+
+    await this.db
+      .updateTable('userTokens')
+      .set({
+        expiresAt: data.expiresAt,
+      })
+      .where('id', '=', data.apiKeyId)
+      .where('workspaceId', '=', workspaceId)
+      .where('type', '=', 'api_key')
+      .execute();
+
+    const creator = await this.db
+      .selectFrom('users')
+      .select(['id', 'name', 'avatarUrl'])
+      .where('id', '=', apiKey.creatorId)
+      .executeTakeFirst();
+
+    return {
+      id: apiKey.id,
+      name: apiKey.name || 'API Key',
+      token: undefined,
+      createdAt: apiKey.createdAt,
+      expiresAt: apiKey.expiresAt,
+      lastUsedAt: apiKey.lastUsedAt,
+      creatorId: apiKey.creatorId,
+      creator: creator || null,
+    };
   }
 
   async revokeApiKey(apiKeyId: string, workspaceId: string): Promise<void> {
@@ -74,6 +154,14 @@ export class ApiKeyService {
       .where('id', '=', apiKeyId)
       .where('workspaceId', '=', workspaceId)
       .execute();
+
+    await this.db
+      .updateTable('userTokens')
+      .set({ usedAt: new Date() })
+      .where('id', '=', apiKeyId)
+      .where('workspaceId', '=', workspaceId)
+      .where('type', '=', 'api_key')
+      .execute();
   }
 
   async validateApiKey(payload: JwtApiKeyPayload): Promise<any> {
@@ -82,30 +170,36 @@ export class ApiKeyService {
       throw new UnauthorizedException();
     }
 
-    const apiKey = await this.db
-      .selectFrom('apiKeys')
+    const userToken = await this.db
+      .selectFrom('userTokens')
       .selectAll()
       .where('id', '=', payload.apiKeyId)
       .where('workspaceId', '=', payload.workspaceId)
-      .where('deletedAt', 'is', null)
+      .where('type', '=', 'api_key')
+      .where('usedAt', 'is', null)
       .executeTakeFirst();
 
-    if (!apiKey) {
+    if (!userToken) {
       throw new UnauthorizedException('Invalid API key');
     }
 
-    if (apiKey.expiresAt && new Date(apiKey.expiresAt) < new Date()) {
+    if (userToken.expiresAt && new Date(userToken.expiresAt) < new Date()) {
       throw new UnauthorizedException('API key expired');
     }
 
-    // Update last used timestamp
     await this.db
       .updateTable('apiKeys')
       .set({ lastUsedAt: new Date() })
-      .where('id', '=', apiKey.id)
+      .where('id', '=', userToken.id)
       .execute();
 
-    const user = await this.userRepo.findById(apiKey.creatorId, workspace.id);
+    await this.db
+      .updateTable('userTokens')
+      .set({ usedAt: new Date() })
+      .where('id', '=', userToken.id)
+      .execute();
+
+    const user = await this.userRepo.findById(userToken.userId, workspace.id);
     if (!user) {
       throw new UnauthorizedException();
     }

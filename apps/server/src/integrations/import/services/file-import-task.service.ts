@@ -34,6 +34,7 @@ import { PageService } from '../../../core/page/services/page.service';
 import { ImportPageNode } from '../dto/file-task-dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventName } from '../../../common/events/event.contants';
+import { ConfluenceImportService } from '../../../ee/confluence-import/confluence-import.service';
 
 @Injectable()
 export class FileImportTaskService {
@@ -48,6 +49,7 @@ export class FileImportTaskService {
     private readonly importAttachmentService: ImportAttachmentService,
     private moduleRef: ModuleRef,
     private eventEmitter: EventEmitter2,
+    private readonly confluenceImportService?: ConfluenceImportService,
   ) {}
 
   async processZIpImport(fileTaskId: string): Promise<void> {
@@ -88,6 +90,19 @@ export class FileImportTaskService {
       );
       await pipeline(fileStream, createWriteStream(tmpZipPath));
       await extractZip(tmpZipPath, tmpExtractDir);
+      const extractedFiles = await fs.readdir(tmpExtractDir);
+      this.logger.debug(
+        `[DEBUG] Extracted files: ${extractedFiles.join(', ')}`,
+      );
+      for (const file of extractedFiles) {
+        const stat = await fs.stat(path.join(tmpExtractDir, file));
+        if (stat.isDirectory()) {
+          const dirFiles = await fs.readdir(path.join(tmpExtractDir, file));
+          this.logger.debug(
+            `[DEBUG] Directory ${file} contains: ${dirFiles.join(', ')}`,
+          );
+        }
+      }
     } catch (err) {
       await cleanupTmpFile();
       await cleanupTmpDir();
@@ -107,22 +122,19 @@ export class FileImportTaskService {
       }
 
       if (fileTask.source === FileImportSource.Confluence) {
-        let ConfluenceModule: any;
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
-          ConfluenceModule = require('./../../../ee/confluence-import/confluence-import.service');
-        } catch (err) {
+        if (!this.confluenceImportService) {
           this.logger.error(
             'Confluence import requested but EE module not bundled in this build',
           );
+          await this.updateTaskStatus(
+            fileTaskId,
+            FileTaskStatus.Failed,
+            'Confluence import not available in this build',
+          );
           return;
         }
-        const confluenceImportService = this.moduleRef.get(
-          ConfluenceModule.ConfluenceImportService,
-          { strict: false },
-        );
 
-        await confluenceImportService.processConfluenceImport({
+        await this.confluenceImportService.processConfluenceImport({
           extractDir: tmpExtractDir,
           fileTask,
         });

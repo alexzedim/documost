@@ -90,7 +90,7 @@ function ImportFormatSelection({ spaceId, onClose }: ImportFormatSelection) {
   const confluenceFileRef = useRef<() => void>(null);
   const zipFileRef = useRef<() => void>(null);
 
-  const canUseConfluence = isCloud() || workspace?.hasLicenseKey;
+  // const canUseConfluence = isCloud() || workspace?.hasLicenseKey;
 
   const handleZipUpload = async (selectedFile: File, source: string) => {
     if (!selectedFile) {
@@ -114,7 +114,7 @@ function ImportFormatSelection({ spaceId, onClose }: ImportFormatSelection) {
         id: "import",
         title: t("Importing pages"),
         message: t(
-          "Page import is in progress. You can check back later if this takes longer.",
+          "Page import is in progress. You can check back later if this takes longer."
         ),
         loading: true,
         withCloseButton: true,
@@ -189,7 +189,7 @@ function ImportFormatSelection({ spaceId, onClose }: ImportFormatSelection) {
               "Something went wrong while importing pages: {{reason}}.",
               {
                 reason: fileTask.errorMessage,
-              },
+              }
             ),
             icon: <IconX size={18} />,
             loading: false,
@@ -209,7 +209,7 @@ function ImportFormatSelection({ spaceId, onClose }: ImportFormatSelection) {
             "Something went wrong while importing pages: {{reason}}.",
             {
               reason: err.response?.data.message,
-            },
+            }
           ),
           icon: <IconX size={18} />,
           loading: false,
@@ -291,7 +291,12 @@ function ImportFormatSelection({ spaceId, onClose }: ImportFormatSelection) {
   return (
     <>
       <SimpleGrid cols={2}>
-        <FileButton onChange={handleFileUpload} accept=".md" multiple resetRef={markdownFileRef}>
+        <FileButton
+          onChange={handleFileUpload}
+          accept=".md"
+          multiple
+          resetRef={markdownFileRef}
+        >
           {(props) => (
             <Button
               justify="start"
@@ -304,7 +309,12 @@ function ImportFormatSelection({ spaceId, onClose }: ImportFormatSelection) {
           )}
         </FileButton>
 
-        <FileButton onChange={handleFileUpload} accept="text/html" multiple resetRef={htmlFileRef}>
+        <FileButton
+          onChange={handleFileUpload}
+          accept="text/html"
+          multiple
+          resetRef={htmlFileRef}
+        >
           {(props) => (
             <Button
               justify="start"
@@ -339,20 +349,20 @@ function ImportFormatSelection({ spaceId, onClose }: ImportFormatSelection) {
           resetRef={confluenceFileRef}
         >
           {(props) => (
-            <Tooltip
-              label={t("Available in enterprise edition")}
-              disabled={canUseConfluence}
+            // <Tooltip
+            //   label={t("Available in enterprise edition")}
+            //   disabled={canUseConfluence}
+            // >
+            <Button
+              // disabled={!canUseConfluence}
+              justify="start"
+              variant="default"
+              leftSection={<ConfluenceIcon size={18} />}
+              {...props}
             >
-              <Button
-                disabled={!canUseConfluence}
-                justify="start"
-                variant="default"
-                leftSection={<ConfluenceIcon size={18} />}
-                {...props}
-              >
-                Confluence
-              </Button>
-            </Tooltip>
+              Confluence
+            </Button>
+            // </Tooltip>
           )}
         </FileButton>
       </SimpleGrid>
@@ -367,7 +377,7 @@ function ImportFormatSelection({ spaceId, onClose }: ImportFormatSelection) {
               `Upload zip file containing Markdown and HTML files. Max: {{sizeLimit}}`,
               {
                 sizeLimit: formatBytes(getFileImportSizeLimit()),
-              },
+              }
             )}
           </Text>
           <FileButton

@@ -1,6 +1,5 @@
 {
   "name": "docmost",
-  "homepage": "https://docmost.com",
   "version": "0.24.1",
   "private": true,
   "scripts": {

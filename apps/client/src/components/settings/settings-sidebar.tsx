@@ -67,9 +67,9 @@ const groupedData: DataGroup[] = [
         label: "API keys",
         icon: IconKey,
         path: "/settings/account/api-keys",
-        isCloud: true,
-        isEnterprise: true,
-        showDisabledInNonEE: true,
+        // isCloud: true,
+        // isEnterprise: true,
+        // showDisabledInNonEE: true,
       },
     ],
   },
@@ -89,15 +89,15 @@ const groupedData: DataGroup[] = [
         isCloud: true,
         isAdmin: true,
       },
-      {
-        label: "Security & SSO",
-        icon: IconLock,
-        path: "/settings/security",
-        isCloud: true,
-        isEnterprise: true,
-        isAdmin: true,
-        showDisabledInNonEE: true,
-      },
+      // {
+      //   label: "Security & SSO",
+      //   icon: IconLock,
+      //   path: "/settings/security",
+      //   isCloud: true,
+      //   isEnterprise: true,
+      //   isAdmin: true,
+      //   showDisabledInNonEE: true,
+      // },
       { label: "Groups", icon: IconUsersGroup, path: "/settings/groups" },
       { label: "Spaces", icon: IconSpaces, path: "/settings/spaces" },
       { label: "Public sharing", icon: IconWorld, path: "/settings/sharing" },
@@ -105,30 +105,30 @@ const groupedData: DataGroup[] = [
         label: "API management",
         icon: IconKey,
         path: "/settings/api-keys",
-        isCloud: true,
-        isEnterprise: true,
+        // isCloud: true,
+        // isEnterprise: true,
         isAdmin: true,
-        showDisabledInNonEE: true,
+        // showDisabledInNonEE: true,
       },
-      {
-        label: "AI settings",
-        icon: IconSparkles,
-        path: "/settings/ai",
-        isAdmin: true,
-        isSelfhosted: true,
-      },
+      // {
+      //   label: "AI settings",
+      //   icon: IconSparkles,s
+      //   path: "/settings/ai",
+      //   isAdmin: true,
+      //   isSelfhosted: true,
+      // },
     ],
   },
-  {
-    heading: "System",
-    items: [
-      {
-        label: "License & Edition",
-        icon: IconKey,
-        path: "/settings/license",
-      },
-    ],
-  },
+  // {
+  //   heading: "System",
+  //   items: [
+  //     {
+  //       label: "License & Edition",
+  //       icon: IconKey,
+  //       path: "/settings/license",
+  //     },
+  //   ],
+  // },
 ];
 
 export default function SettingsSidebar() {

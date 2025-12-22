@@ -2,6 +2,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
 import { KyselyDB } from '@docmost/db/types/kysely.types';
+// @ts-ignore
 import * as ldap from 'ldapjs';
 
 @Injectable()
@@ -24,7 +25,9 @@ export class LdapService {
 
     const client = ldap.createClient({
       url: provider.ldapUrl,
-      tlsOptions: provider.ldapTlsEnabled ? { rejectUnauthorized: false } : undefined,
+      tlsOptions: provider.ldapTlsEnabled
+        ? { rejectUnauthorized: false }
+        : undefined,
     });
 
     return new Promise((resolve, reject) => {
@@ -67,7 +70,9 @@ export class LdapService {
                 client.unbind();
 
                 if (err) {
-                  return reject(new UnauthorizedException('Invalid credentials'));
+                  return reject(
+                    new UnauthorizedException('Invalid credentials'),
+                  );
                 }
 
                 // Generate token

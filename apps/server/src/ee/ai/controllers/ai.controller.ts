@@ -8,12 +8,12 @@ import {
   HttpStatus,
   Res,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { AuthUser } from '../../common/decorators/auth-user.decorator';
-import { AuthWorkspace } from '../../common/decorators/auth-workspace.decorator';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { AuthUser } from '../../../common/decorators/auth-user.decorator';
+import { AuthWorkspace } from '../../../common/decorators/auth-workspace.decorator';
 import { User, Workspace } from '@docmost/db/types/entity.types';
-import { AiService } from './services/ai.service';
-import { AiSearchService } from './services/ai-search.service';
+import { AiService } from '../services/ai.service';
+import { AiSearchService } from '../services/ai-search.service';
 import { FastifyReply } from 'fastify';
 
 @UseGuards(JwtAuthGuard)
@@ -46,9 +46,14 @@ export class AiController {
     res.raw.setHeader('Cache-Control', 'no-cache');
     res.raw.setHeader('Connection', 'keep-alive');
 
-    await this.aiService.generateContentStream(data, user, workspace, (chunk) => {
-      res.raw.write(`data: ${JSON.stringify(chunk)}\n\n`);
-    });
+    await this.aiService.generateContentStream(
+      data,
+      user,
+      workspace,
+      (chunk) => {
+        res.raw.write(`data: ${JSON.stringify(chunk)}\n\n`);
+      },
+    );
 
     res.raw.write('data: [DONE]\n\n');
     res.raw.end();
@@ -66,9 +71,14 @@ export class AiController {
     res.raw.setHeader('Cache-Control', 'no-cache');
     res.raw.setHeader('Connection', 'keep-alive');
 
-    const result = await this.aiSearchService.searchAndAnswer(data, user, workspace, (chunk) => {
-      res.raw.write(`data: ${JSON.stringify(chunk)}\n\n`);
-    });
+    const result = await this.aiSearchService.searchAndAnswer(
+      data,
+      user,
+      workspace,
+      (chunk) => {
+        res.raw.write(`data: ${JSON.stringify(chunk)}\n\n`);
+      },
+    );
 
     res.raw.write('data: [DONE]\n\n');
     res.raw.end();
@@ -78,7 +88,8 @@ export class AiController {
   @Post('config')
   async getConfig(@AuthWorkspace() workspace: Workspace) {
     return {
-      configured: !!process.env.OPENAI_API_KEY || !!process.env.ANTHROPIC_API_KEY,
+      configured:
+        !!process.env.OPENAI_API_KEY || !!process.env.ANTHROPIC_API_KEY,
       availableActions: [
         'improve_writing',
         'fix_spelling_grammar',

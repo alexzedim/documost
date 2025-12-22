@@ -9,7 +9,7 @@ declare global {
 }
 
 export function getAppName(): string {
-  return "Docmost";
+  return "Wiki";
 }
 
 export function getAppUrl(): string {
@@ -44,7 +44,7 @@ export function isCloud(): boolean {
 
 export function getAvatarUrl(
   avatarUrl: string,
-  type: AvatarIconType = AvatarIconType.AVATAR,
+  type: AvatarIconType = AvatarIconType.AVATAR
 ) {
   if (!avatarUrl) return null;
   if (avatarUrl?.startsWith("http")) return avatarUrl;

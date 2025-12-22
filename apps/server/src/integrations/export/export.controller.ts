@@ -75,6 +75,28 @@ export class ExportController {
 
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
+  @Post('pages/export/html')
+  async getPageHtmlContent(
+    @Body() dto: { pageId: string },
+    @AuthUser() user: User,
+  ) {
+    const page = await this.pageRepo.findById(dto.pageId, {
+      includeContent: true,
+    });
+
+    if (!page || page.deletedAt) {
+      throw new NotFoundException('Page not found');
+    }
+
+    const html = await this.exportService.exportPage('html', page, true);
+
+    return {
+      content: html,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
   @Post('spaces/export')
   async exportSpace(
     @Body() dto: ExportSpaceDto,

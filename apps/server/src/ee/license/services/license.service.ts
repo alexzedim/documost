@@ -1,96 +1,80 @@
 // /ee/license/services/license.service.ts
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
 import { KyselyDB } from '@docmost/db/types/kysely.types';
-import * as crypto from 'crypto';
 
 @Injectable()
 export class LicenseService {
+  private readonly logger = new Logger(LicenseService.name);
+
   constructor(@InjectKysely() private readonly db: KyselyDB) {}
 
   async getLicenseInfo(workspaceId: string): Promise<any> {
-    return this.db
-      .selectFrom('licenses')
-      .selectAll()
-      .where('workspaceId', '=', workspaceId)
-      .executeTakeFirst();
+    this.logger.debug(`Getting license info for workspace: ${workspaceId}`);
+
+    // Всегда возвращаем валидную лицензию для разработки
+    return {
+      licenseKey: 'DEV-LICENSE-KEY',
+      plan: 'enterprise',
+      trialEndAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      customerName: 'Development',
+      seatCount: 100,
+      issuedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      trial: true,
+    };
   }
 
   async activateLicense(licenseKey: string, workspaceId: string): Promise<any> {
-    // Validate license key format
-    if (!this.validateLicenseKey(licenseKey)) {
-      throw new BadRequestException('Invalid license key format');
-    }
+    this.logger.debug(`Activating license for workspace: ${workspaceId}`);
 
-    // Decode and verify license
-    const licenseData = this.decodeLicenseKey(licenseKey);
-
-    if (!licenseData) {
-      throw new BadRequestException('Invalid license key');
-    }
-
-    // Check if license is expired
-    if (new Date(licenseData.expiresAt) < new Date()) {
-      throw new BadRequestException('License has expired');
-    }
-
-    // Store license
-    const license = await this.db
-      .insertInto('licenses')
-      .values({
-        id: crypto.randomUUID(),
-        licenseKey,
-        workspaceId,
-        customerName: licenseData.customerName,
-        seatCount: licenseData.seatCount,
-        issuedAt: new Date(licenseData.issuedAt),
-        expiresAt: new Date(licenseData.expiresAt),
-        trial: licenseData.trial || false,
-        createdAt: new Date(),
+    // Для разработки - всегда успешно
+    await this.db
+      .updateTable('workspaces')
+      .set({
+        licenseKey: licenseKey,
+        plan: 'enterprise',
+        updatedAt: new Date(),
       })
-      .onConflict((oc) => oc.column('workspaceId').doUpdateSet({
-        licenseKey,
-        customerName: licenseData.customerName,
-        seatCount: licenseData.seatCount,
-        issuedAt: new Date(licenseData.issuedAt),
-        expiresAt: new Date(licenseData.expiresAt),
-      }))
-      .returningAll()
-      .executeTakeFirst();
+      .where('id', '=', workspaceId)
+      .execute();
 
-    return license;
+    return {
+      licenseKey,
+      workspaceId,
+      customerName: 'Development',
+      seatCount: 100,
+      trial: true,
+    };
   }
 
   async removeLicense(workspaceId: string): Promise<void> {
+    this.logger.debug(`Removing license for workspace: ${workspaceId}`);
+
     await this.db
-      .deleteFrom('licenses')
-      .where('workspaceId', '=', workspaceId)
+      .updateTable('workspaces')
+      .set({
+        licenseKey: null,
+        plan: null,
+        updatedAt: new Date(),
+      })
+      .where('id', '=', workspaceId)
       .execute();
   }
 
+  // Убираем все валидации
   private validateLicenseKey(key: string): boolean {
-    // Basic format validation
-    return /^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(key);
+    return true; // Все ключи валидны
   }
 
   private decodeLicenseKey(key: string): any {
-    try {
-      // Remove dashes
-      const cleanKey = key.replace(/-/g, '');
-      
-      // Decode base64 (simplified - real implementation would use proper encryption)
-      const decoded = Buffer.from(cleanKey, 'hex').toString('utf8');
-      const data = JSON.parse(decoded);
-
-      return {
-        customerName: data.customer,
-        seatCount: data.seats,
-        issuedAt: data.issued,
-        expiresAt: data.expires,
-        trial: data.trial,
-      };
-    } catch (error) {
-      return null;
-    }
+    // Всегда возвращаем валидные данные
+    return {
+      customerName: 'Development',
+      seatCount: 100,
+      issuedAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      trial: true,
+    };
   }
 }

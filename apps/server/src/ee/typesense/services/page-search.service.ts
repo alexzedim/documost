@@ -7,21 +7,27 @@ import Typesense from 'typesense';
 @Injectable()
 export class PageSearchService {
   private readonly logger = new Logger(PageSearchService.name);
+  // @ts-ignore
   private client: Typesense.Client;
 
   constructor(@InjectKysely() private readonly db: KyselyDB) {
     this.client = new Typesense.Client({
-      nodes: [{
-        host: process.env.TYPESENSE_HOST || 'localhost',
-        port: parseInt(process.env.TYPESENSE_PORT || '8108'),
-        protocol: process.env.TYPESENSE_PROTOCOL || 'http',
-      }],
+      nodes: [
+        {
+          host: process.env.TYPESENSE_HOST || 'localhost',
+          port: parseInt(process.env.TYPESENSE_PORT || '8108'),
+          protocol: process.env.TYPESENSE_PROTOCOL || 'http',
+        },
+      ],
       apiKey: process.env.TYPESENSE_API_KEY || '',
       connectionTimeoutSeconds: 2,
     });
   }
 
-  async searchPage(searchParams: any, opts: { userId?: string; workspaceId: string }): Promise<any> {
+  async searchPage(
+    searchParams: any,
+    opts: { userId?: string; workspaceId: string },
+  ): Promise<any> {
     const { query, spaceId, shareId } = searchParams;
     const { userId, workspaceId } = opts;
 
@@ -47,7 +53,7 @@ export class PageSearchService {
         .search(searchParameters);
 
       return {
-        data: results.hits?.map(hit => hit.document) || [],
+        data: results.hits?.map((hit) => hit.document) || [],
         total: results.found || 0,
       };
     } catch (error) {
@@ -65,16 +71,13 @@ export class PageSearchService {
 
     if (!page) return;
 
-    await this.client
-      .collections('pages')
-      .documents()
-      .upsert({
-        id: page.id,
-        title: page.title,
-        textContent: page.textContent,
-        workspaceId: page.workspaceId,
-        spaceId: page.spaceId,
-        createdAt: page.createdAt.getTime(),
-      });
+    await this.client.collections('pages').documents().upsert({
+      id: page.id,
+      title: page.title,
+      textContent: page.textContent,
+      workspaceId: page.workspaceId,
+      spaceId: page.spaceId,
+      createdAt: page.createdAt.getTime(),
+    });
   }
 }

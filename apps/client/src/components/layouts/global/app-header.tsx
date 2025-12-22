@@ -79,7 +79,7 @@ export function AppHeader() {
             component={Link}
             to="/home"
           >
-            Docmost
+            <span style={{ color: "#0b60d8" }}>&#931;</span> Wiki
           </Text>
 
           <Group ml={50} gap={5} className={classes.links} visibleFrom="sm">

@@ -374,7 +374,7 @@ function ImportFormatSelection({ spaceId, onClose }: ImportFormatSelection) {
           </Text>
           <Text ta="center" size="sm" c="dimmed" inline py="sm">
             {t(
-              `Upload zip file containing Markdown and HTML files. Max: {{sizeLimit}}`,
+              `Upload zip file containing Markdown or HTML files. Max: {{sizeLimit}}`,
               {
                 sizeLimit: formatBytes(getFileImportSizeLimit()),
               }

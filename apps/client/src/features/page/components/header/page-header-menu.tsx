@@ -70,7 +70,7 @@ export default function PageHeaderMenu({ readOnly }: PageHeaderMenuProps) {
         },
       ],
     ],
-    [],
+    []
   );
 
   return (
@@ -89,7 +89,7 @@ export default function PageHeaderMenu({ readOnly }: PageHeaderMenuProps) {
 
       {!readOnly && <PageStateSegmentedControl size="xs" />}
 
-      <ShareModal readOnly={readOnly} />
+      {/* <ShareModal readOnly={readOnly} /> */}
 
       <Tooltip label={t("Comments")} openDelay={250} withArrow>
         <ActionIcon

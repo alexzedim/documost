@@ -10,7 +10,6 @@ import { generateSlugId } from '../../common/helpers';
 import { generateJitteredKeyBetween } from 'fractional-indexing-jittered';
 import { ImportService } from '../../integrations/import/services/import.service';
 import { PageService } from '../../core/page/services/page.service';
-import { BacklinkRepo } from '@docmost/db/repos/backlink/backlink.repo';
 import { executeTx } from '@docmost/db/utils';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventName } from '../../common/events/event.contants';
@@ -35,7 +34,6 @@ export class ConfluenceImportService {
     @InjectKysely() private readonly db: KyselyDB,
     private readonly importService: ImportService,
     private readonly pageService: PageService,
-    private readonly backlinkRepo: BacklinkRepo,
     private eventEmitter: EventEmitter2,
     private moduleRef: ModuleRef,
   ) {}
@@ -53,7 +51,6 @@ export class ConfluenceImportService {
       );
       const pages = await this.parseConfluenceExport(extractDir);
 
-      // 1. Создаем структуру страниц
       const pagesByConfluenceId = new Map<string, any>();
       const newIdsByConfluenceId = new Map<string, string>();
       const parentRelations: Array<{
@@ -86,7 +83,6 @@ export class ConfluenceImportService {
         }
       }
 
-      // 2. Обработка вложений
       const attachmentCandidates = new Map<string, string>();
       await this.buildAttachmentCandidates(extractDir, attachmentCandidates);
 
@@ -108,7 +104,6 @@ export class ConfluenceImportService {
           });
       }
 
-      // 3. Генерация позиций - ТОЛЬКО для корневых страниц сначала
       const rootPages = Array.from(pagesByConfluenceId.values()).filter(
         (p) =>
           !p.parentConfluenceId ||
@@ -140,7 +135,6 @@ export class ConfluenceImportService {
         });
       }
 
-      // 4. Генерация позиций для дочерних страниц - итеративно
       let remainingChildPages = Array.from(pagesByConfluenceId.values()).filter(
         (p) =>
           p.parentConfluenceId &&
@@ -161,9 +155,7 @@ export class ConfluenceImportService {
           ) {
             const parentPage = pagesByConfluenceId.get(parentConfluenceId);
 
-            // Если родитель уже имеет позицию
             if (parentPage && parentPage.position !== null) {
-              // Получаем всех siblings с тем же родителем, у которых уже есть позиция
               const siblingsWithPosition = Array.from(
                 pagesByConfluenceId.values(),
               ).filter(
@@ -175,10 +167,8 @@ export class ConfluenceImportService {
 
               try {
                 if (siblingsWithPosition.length === 0) {
-                  // Первый ребенок этого родителя
                   page.position = generateJitteredKeyBetween(null, null);
                 } else {
-                  // Есть другие дети - сортируем по алфавиту
                   const allSiblings = [...siblingsWithPosition, page];
                   allSiblings.sort((a, b) => a.title.localeCompare(b.title));
 
@@ -187,13 +177,11 @@ export class ConfluenceImportService {
                   );
 
                   if (pageIndex === 0) {
-                    // Вставляем перед первым sibling
                     page.position = generateJitteredKeyBetween(
                       null,
                       siblingsWithPosition[0].position,
                     );
                   } else {
-                    // Находим предыдущего sibling по алфавиту с позицией
                     const prevSiblings = allSiblings
                       .slice(0, pageIndex)
                       .filter((p) => p.position !== null)
@@ -230,7 +218,6 @@ export class ConfluenceImportService {
           }
         }
 
-        // Обновляем список оставшихся страниц
         remainingChildPages = Array.from(pagesByConfluenceId.values()).filter(
           (p) =>
             p.parentConfluenceId &&
@@ -238,7 +225,6 @@ export class ConfluenceImportService {
             p.position === null,
         );
 
-        // Защита от бесконечного цикла
         if (!processedAny && remainingChildPages.length > 0) {
           this.logger.warn(
             `Could not generate positions for ${remainingChildPages.length} pages, using defaults`,
@@ -250,17 +236,14 @@ export class ConfluenceImportService {
         }
       }
 
-      // 5. Убедимся, что у всех страниц есть позиция
       for (const page of Array.from(pagesByConfluenceId.values())) {
         if (page.position === null) {
           page.position = generateJitteredKeyBetween(null, null);
         }
       }
 
-      // 6. Вставляем все страницы с parentPageId = null
       const validPageIds = new Set<string>();
       await executeTx(this.db, async (trx) => {
-        // Вставка всех страниц
         for (const page of Array.from(pagesByConfluenceId.values())) {
           const pmState = getProsemirrorContent(
             await this.importService.processHTML(page.processedContent),
@@ -282,14 +265,13 @@ export class ConfluenceImportService {
             workspaceId: fileTask.workspaceId,
             creatorId: fileTask.creatorId,
             lastUpdatedById: fileTask.creatorId,
-            parentPageId: null, // Временно null
+            parentPageId: null,
           };
 
           await trx.insertInto('pages').values(insertablePage).execute();
           validPageIds.add(insertablePage.id);
         }
 
-        // 7. Обновляем parentPageId для всех страниц
         for (const relation of parentRelations) {
           const parentNewId = newIdsByConfluenceId.get(
             relation.parentConfluenceId,
@@ -320,7 +302,6 @@ export class ConfluenceImportService {
     }
   }
 
-  // Добавь эти вспомогательные методы в класс:
   private async buildAttachmentCandidates(
     baseDir: string,
     candidates: Map<string, string>,
@@ -336,7 +317,6 @@ export class ConfluenceImportService {
           : entry.name;
 
         if (entry.isDirectory()) {
-          // Пропускаем системные папки
           if (entry.name === '__MACOSX' || entry.name.startsWith('.')) {
             continue;
           }
@@ -346,27 +326,20 @@ export class ConfluenceImportService {
             currentRelativePath,
           );
         } else if (entry.isFile()) {
-          // Добавляем файл
           candidates.set(currentRelativePath, fullPath);
 
-          // Также добавляем варианты с декодированными пробелами
           if (currentRelativePath.includes('%20')) {
             const decodedPath = currentRelativePath.replace(/%20/g, ' ');
             candidates.set(decodedPath, fullPath);
           }
 
-          // Для Confluence: добавляем путь без префикса папки attachments
-          // attachments/649959151/image.png -> 649959151/image.png
           if (currentRelativePath.startsWith('attachments/')) {
-            const withoutAttachments = currentRelativePath.substring(12); // "attachments/".length
+            const withoutAttachments = currentRelativePath.substring(12);
             candidates.set(withoutAttachments, fullPath);
 
-            // Также для пути с только ID папки: 649959151/image.png
             const parts = withoutAttachments.split('/');
             if (parts.length > 1) {
-              const idFolder = parts[0];
               const fileName = parts.slice(1).join('/');
-              // Добавляем как image.png (если нужно)
               candidates.set(fileName, fullPath);
             }
           }
@@ -381,7 +354,6 @@ export class ConfluenceImportService {
     baseDir: string,
     pageId: string,
   ): Promise<string | null> {
-    // Пробуем найти файл разными способами
     const searchPatterns = [
       `${pageId}.html`,
       `**/${pageId}.html`,
@@ -395,7 +367,6 @@ export class ConfluenceImportService {
           pattern,
         );
         if (files.length > 0) {
-          // Берем первый найденный файл
           const relativePath = path.relative(baseDir, files[0]);
           const normalizedPath = relativePath.split(path.sep).join('/');
 
@@ -409,12 +380,10 @@ export class ConfluenceImportService {
       }
     }
 
-    // Если не нашли, проверяем специально для файлов с префиксом
     try {
       const allHtmlFiles = await this.findFilesByExtension(baseDir, '.html');
       for (const file of allHtmlFiles) {
         const fileName = path.basename(file, '.html');
-        // Проверяем, содержит ли имя файла ID страницы
         if (fileName.includes(pageId)) {
           const relativePath = path.relative(baseDir, file);
           const normalizedPath = relativePath.split(path.sep).join('/');
@@ -455,14 +424,7 @@ export class ConfluenceImportService {
           );
           results.push(...subResults);
         } else if (entry.isFile() && entry.name.endsWith('.html')) {
-          // Проверяем соответствие паттерну
-          if (
-            this.fileMatchesPattern(
-              entry.name,
-              pattern,
-              path.relative(dir, fullPath),
-            )
-          ) {
+          if (this.fileMatchesPattern(entry.name, pattern)) {
             results.push(fullPath);
           }
         }
@@ -509,80 +471,21 @@ export class ConfluenceImportService {
     return results;
   }
 
-  private fileMatchesPattern(
-    fileName: string,
-    pattern: string,
-    filePath?: string,
-  ): boolean {
-    // Простая проверка соответствия
+  private fileMatchesPattern(fileName: string, pattern: string): boolean {
     if (pattern.includes('**')) {
-      // Рекурсивный паттерн
       const searchName = pattern.split('/').pop() || pattern;
       if (searchName.includes('*')) {
-        // Паттерн с подстановкой
         const regexPattern = searchName
           .replace(/\*/g, '.*')
           .replace(/\./g, '\\.');
         const regex = new RegExp(`^${regexPattern}$`);
         return regex.test(fileName);
       } else {
-        // Простое имя файла
         return fileName === searchName;
       }
     } else {
-      // Простой паттерн
       return fileName === pattern;
     }
-  }
-
-  private matchesPattern(fileName: string, pattern: string): boolean {
-    // Простая проверка соответствия паттерну
-    if (pattern === `${path.basename(pattern, '.html')}.html`) {
-      // Точное совпадение
-      return fileName === pattern;
-    }
-
-    if (pattern.startsWith('**/')) {
-      const searchPart = pattern.slice(3);
-      if (searchPart === `*${path.basename(searchPart, '.html')}*.html`) {
-        // **/*ID*.html
-        const id = searchPart.replace('*', '').replace('.html', '');
-        return fileName.includes(id) && fileName.endsWith('.html');
-      }
-      if (searchPart === `*${path.basename(searchPart, '.html')}.html`) {
-        // **/*ID.html
-        const id = searchPart.replace('*', '').replace('.html', '');
-        return fileName.endsWith(`${id}.html`);
-      }
-    }
-
-    return false;
-  }
-
-  private async findFilesRecursively(
-    dir: string,
-    pattern: string,
-  ): Promise<string[]> {
-    const results: string[] = [];
-
-    try {
-      const entries = await fs.readdir(dir, { withFileTypes: true });
-
-      for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
-
-        if (entry.isDirectory()) {
-          const subResults = await this.findFilesRecursively(fullPath, pattern);
-          results.push(...subResults);
-        } else if (entry.isFile() && entry.name === pattern) {
-          results.push(fullPath);
-        }
-      }
-    } catch (error) {
-      // Пропускаем ошибки
-    }
-
-    return results;
   }
 
   private async parseConfluenceExport(
@@ -590,15 +493,12 @@ export class ConfluenceImportService {
   ): Promise<ConfluencePage[]> {
     const pages: ConfluencePage[] = [];
 
-    // Рекурсивный поиск HTML файлов
     await this.findHtmlFilesRecursively(extractDir, pages);
 
     this.logger.debug(`Found ${pages.length} HTML files`);
 
-    // Парсим breadcrumb для определения иерархии
     await this.parseBreadcrumbHierarchy(pages, extractDir);
 
-    // Логируем результат
     for (const page of pages) {
       const parentInfo = page.parent
         ? `parent: ${page.parent} (${pages.find((p) => p.id === page.parent)?.title || 'unknown'})`
@@ -630,10 +530,7 @@ export class ConfluenceImportService {
       );
 
       if (breadcrumbIds.length > 1) {
-        // Breadcrumb содержит несколько страниц
-        // Последний элемент - текущая страница
-        // Предпоследний - непосредственный родитель
-        const breadcrumbWithoutCurrent = breadcrumbIds.slice(0, -1); // Все кроме последнего
+        const breadcrumbWithoutCurrent = breadcrumbIds.slice(0, -1);
 
         if (breadcrumbWithoutCurrent.length > 0) {
           const immediateParentId =
@@ -641,7 +538,6 @@ export class ConfluenceImportService {
 
           if (pageMap.has(immediateParentId)) {
             page.parent = immediateParentId;
-            // Строим цепочку предков
             page.ancestors = [...breadcrumbWithoutCurrent].reverse();
 
             this.logger.debug(
@@ -655,12 +551,10 @@ export class ConfluenceImportService {
           }
         }
       } else if (breadcrumbIds.length === 1 && breadcrumbIds[0] === page.id) {
-        // Только текущая страница в breadcrumb - значит это корневая страница
         this.logger.debug(`  -> Page ${page.id} appears to be a root page`);
       }
     }
 
-    // Статистика
     const pagesWithParents = pages.filter((p) => p.parent).length;
     this.logger.debug(
       `Pages with parents determined from breadcrumb: ${pagesWithParents}/${pages.length}`,
@@ -675,15 +569,12 @@ export class ConfluenceImportService {
     const breadcrumbIds: string[] = [];
 
     try {
-      // Парсим breadcrumb из HTML
-      // Ищем <div id="breadcrumb-section"> или <ol id="breadcrumbs">
       const breadcrumbSectionMatch = htmlContent.match(
         /<div[^>]*id=["']breadcrumb-section["'][^>]*>([\s\S]*?)<\/div>/i,
       );
 
       if (breadcrumbSectionMatch) {
         const breadcrumbHtml = breadcrumbSectionMatch[1];
-        // Ищем все ссылки в breadcrumb
         const linkRegex = /<a[^>]*href=["']([^"']*\.html)["'][^>]*>/gi;
         let match;
 
@@ -693,7 +584,6 @@ export class ConfluenceImportService {
             const fileName = path.basename(href);
             const pageId = this.extractPageId(fileName.replace('.html', ''));
 
-            // Проверяем, существует ли такой файл
             const pageFile = await this.findPageFile(extractDir, pageId);
             if (pageFile && !breadcrumbIds.includes(pageId)) {
               breadcrumbIds.push(pageId);
@@ -702,7 +592,6 @@ export class ConfluenceImportService {
         }
       }
 
-      // Также ищем напрямую <ol id="breadcrumbs">
       if (breadcrumbIds.length === 0) {
         const breadcrumbsOlMatch = htmlContent.match(
           /<ol[^>]*id=["']breadcrumbs["'][^>]*>([\s\S]*?)<\/ol>/i,
@@ -728,7 +617,6 @@ export class ConfluenceImportService {
         }
       }
 
-      // Добавляем текущую страницу в конец breadcrumb, если ее еще нет
       if (!breadcrumbIds.includes(currentPageId)) {
         breadcrumbIds.push(currentPageId);
       }
@@ -749,11 +637,7 @@ export class ConfluenceImportService {
     extractDir: string,
     pageId: string,
   ): Promise<string | null> {
-    // Упрощенный поиск без glob
-    const searchPaths = [
-      path.join(extractDir, `${pageId}.html`),
-      // Можно добавить другие пути
-    ];
+    const searchPaths = [path.join(extractDir, `${pageId}.html`)];
 
     for (const filePath of searchPaths) {
       try {
@@ -764,7 +648,6 @@ export class ConfluenceImportService {
       }
     }
 
-    // Рекурсивный поиск
     return await this.findFileRecursively(extractDir, `${pageId}.html`);
   }
 
@@ -779,7 +662,6 @@ export class ConfluenceImportService {
         const fullPath = path.join(dir, entry.name);
 
         if (entry.isDirectory()) {
-          // Пропускаем системные папки
           if (entry.name === '__MACOSX' || entry.name.startsWith('.')) {
             continue;
           }
@@ -827,12 +709,11 @@ export class ConfluenceImportService {
             const pageId = this.extractPageId(fileNameWithoutExt);
             const title = this.extractTitle(content) || fileNameWithoutExt;
 
-            // НЕ определяем родителя здесь - будет определено из breadcrumb
             pages.push({
               id: pageId,
               title,
               body: content,
-              parent: undefined, // Оставляем undefined
+              parent: undefined,
               ancestors: [],
             });
           } catch (error) {
@@ -845,295 +726,24 @@ export class ConfluenceImportService {
     }
   }
 
-  private async parseDirectParentLinks(
-    pages: ConfluencePage[],
-    extractDir: string,
-  ): Promise<void> {
-    const pageMap = new Map<string, ConfluencePage>();
-    pages.forEach((page) => pageMap.set(page.id, page));
-
-    for (const page of pages) {
-      if (page.parent) continue; // Уже есть родитель
-
-      // Ищем ссылки на родительскую страницу
-      const parentId = await this.findParentFromLinks(
-        page.body,
-        page.id,
-        extractDir,
-      );
-
-      if (parentId && pageMap.has(parentId)) {
-        page.parent = parentId;
-        page.ancestors = [parentId];
-
-        // Попробуем построить цепочку предков
-        let currentParent = pageMap.get(parentId);
-        while (currentParent && currentParent.parent) {
-          if (!page.ancestors.includes(currentParent.parent)) {
-            page.ancestors.unshift(currentParent.parent);
-            currentParent = pageMap.get(currentParent.parent);
-          } else {
-            break; // Избегаем циклических ссылок
-          }
-        }
-      }
-    }
-  }
-
-  private async findParentFromLinks(
-    htmlContent: string,
-    currentPageId: string,
-    extractDir: string,
-  ): Promise<string | null> {
-    try {
-      // Ищем все ссылки на другие страницы
-      const linkRegex = /<a[^>]*href=["']([^"']*\.html)["'][^>]*>(.*?)<\/a>/gi;
-      const links: Array<{ href: string; text: string }> = [];
-      let match;
-
-      while ((match = linkRegex.exec(htmlContent)) !== null) {
-        links.push({
-          href: match[1],
-          text: match[2].replace(/<[^>]*>/g, '').trim(),
-        });
-      }
-
-      // Фильтруем ссылки, которые могут быть родителями
-      for (const link of links) {
-        const href = link.href;
-        if (
-          href &&
-          !href.includes('index.html') &&
-          !href.includes(currentPageId)
-        ) {
-          const fileName = path.basename(href);
-          const pageId = this.extractPageId(fileName.replace('.html', ''));
-
-          // Проверяем, существует ли такая страница
-          const pageFile = await this.findPageFile(extractDir, pageId);
-          if (pageFile) {
-            // Проверяем текст ссылки - если это "Parent Page" или похожий текст
-            const linkText = link.text.toLowerCase();
-            if (
-              linkText.includes('parent') ||
-              linkText.includes('up') ||
-              linkText.includes('back') ||
-              link.href.includes('parent') ||
-              link.href.includes('up')
-            ) {
-              return pageId;
-            }
-
-            // Если в тексте есть название текущей страницы или похоже на навигацию
-            if (linkText.length > 0 && linkText.length < 50) {
-              // Не слишком длинные ссылки
-              return pageId;
-            }
-          }
-        }
-      }
-    } catch (error) {
-      this.logger.debug(
-        `Could not find parent from links for page ${currentPageId}: ${error}`,
-      );
-    }
-
-    return null;
-  }
-
   private extractPageId(fileName: string): string {
-    // Примеры имен файлов:
-    // AI_Copilot_SIGMA_649959151.html -> 649959151
-    // 654278811.html -> 654278811
-
-    // Ищем числа в названии файла
     const matches = fileName.match(/\d+/g);
     if (matches && matches.length > 0) {
-      // Возвращаем последнее найденное число (обычно ID в конце)
       return matches[matches.length - 1];
     }
 
-    // Если чисел нет, используем всю строку (для index.html и т.д.)
     return fileName;
   }
 
-  private async determineParentId(
-    filePath: string,
-    pages: ConfluencePage[],
-    baseDir: string,
-  ): Promise<string | null> {
-    // Получаем путь к директории файла
-    const dirPath = path.dirname(filePath);
-
-    // Если это корневая директория, нет родителя
-    if (dirPath === '.') {
-      return null;
-    }
-
-    // Разбиваем путь на части
-    const pathParts = dirPath.split('/').filter((part) => part !== '.');
-
-    // Если нет частей пути, значит это корень
-    if (pathParts.length === 0) {
-      return null;
-    }
-
-    // Ищем родительскую директорию
-    let currentPath = '';
-    for (let i = 0; i < pathParts.length; i++) {
-      currentPath = currentPath
-        ? `${currentPath}/${pathParts[i]}`
-        : pathParts[i];
-
-      // Проверяем, есть ли в этой директории HTML файл с таким же именем
-      const potentialParentDir = path.join(baseDir, currentPath);
-      try {
-        const entries = await fs.readdir(potentialParentDir, {
-          withFileTypes: true,
-        });
-
-        for (const entry of entries) {
-          if (
-            entry.isFile() &&
-            entry.name.endsWith('.html') &&
-            entry.name !== 'index.html'
-          ) {
-            const parentFileNameWithoutExt = entry.name.replace('.html', '');
-            const parentId = this.extractPageId(parentFileNameWithoutExt);
-
-            // Проверяем, есть ли уже такая страница в нашем списке
-            const existingParent = pages.find((p) => p.id === parentId);
-            if (existingParent) {
-              // Это ближайший родитель
-              return parentId;
-            }
-
-            // Если родитель не найден, создаем его
-            try {
-              const parentContent = await fs.readFile(
-                path.join(potentialParentDir, entry.name),
-                'utf-8',
-              );
-              const parentTitle =
-                this.extractTitle(parentContent) || parentFileNameWithoutExt;
-
-              // Рекурсивно находим родителя для родителя
-              const parentRelativePath = currentPath;
-              const grandParentId = await this.determineParentId(
-                parentRelativePath,
-                pages,
-                baseDir,
-              );
-
-              // Добавляем родителя
-              pages.unshift({
-                id: parentId,
-                title: parentTitle,
-                body: parentContent,
-                parent: grandParentId,
-                ancestors: grandParentId ? [grandParentId] : [],
-              });
-
-              return parentId;
-            } catch (error) {
-              this.logger.debug(`Could not read parent file: ${error}`);
-            }
-          }
-        }
-      } catch (error) {
-        this.logger.debug(
-          `Could not read directory ${potentialParentDir}: ${error}`,
-        );
-      }
-    }
-
-    return null;
-  }
-
-  private async fileExists(filePath: string): Promise<boolean> {
-    try {
-      await fs.access(filePath);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  private parseIndexHtml(indexContent: string): any {
-    // Парсим index.html для извлечения структуры страниц
-    // Это может быть полезно для определения иерархии
-
-    const structure = {
-      pages: [] as Array<{ id: string; title: string; path: string }>,
-    };
-
-    try {
-      // Простой парсинг ссылок
-      const linkRegex = /<a[^>]*href=["']([^"']*\.html)["'][^>]*>(.*?)<\/a>/gi;
-      let match;
-
-      while ((match = linkRegex.exec(indexContent)) !== null) {
-        const href = match[1];
-        const title = match[2].replace(/<[^>]*>/g, '').trim();
-
-        if (href && !href.includes('index.html')) {
-          // Извлекаем ID из имени файла
-          const fileName = href.split('/').pop() || href;
-          const pageId = this.extractPageId(fileName.replace('.html', ''));
-
-          structure.pages.push({
-            id: pageId,
-            title: title || fileName.replace('.html', ''),
-            path: href,
-          });
-        }
-      }
-    } catch (error) {
-      this.logger.debug(`Could not parse index.html structure: ${error}`);
-    }
-
-    return structure;
-  }
-
-  private async matchPagesWithStructure(
-    pages: ConfluencePage[],
-    structure: any,
-    baseDir: string,
-  ): Promise<void> {
-    // Попробовать сопоставить найденные страницы со структурой из index.html
-    if (!structure.pages || structure.pages.length === 0) {
-      return;
-    }
-
-    const structureMap = new Map<string, any>();
-    structure.pages.forEach((page: any) => {
-      structureMap.set(page.id, page);
-    });
-
-    // Обновить заголовки из структуры, если они есть
-    for (const page of pages) {
-      const structurePage = structureMap.get(page.id);
-      if (structurePage && structurePage.title) {
-        page.title = structurePage.title;
-      }
-    }
-  }
-
   private extractTitle(html: string): string {
-    // Пробуем извлечь заголовок разными способами
-
-    // 1. Из тега <title>
     const titleMatch = html.match(/<title>(.*?)<\/title>/i);
     if (titleMatch) {
       let title = titleMatch[1].trim();
-
-      // Удаляем всё до первого ": " (двоеточие с пробелом)
       title = this.removePrefixBeforeColon(title);
 
       return title;
     }
 
-    // 2. Из заголовка h1
     const h1Match = html.match(/<h1[^>]*>(.*?)<\/h1>/i);
     if (h1Match) {
       let title = h1Match[1].replace(/<[^>]*>/g, '').trim();
@@ -1141,7 +751,6 @@ export class ConfluenceImportService {
       return title;
     }
 
-    // 3. Из метатега
     const metaMatch = html.match(
       /<meta[^>]*property=["']og:title["'][^>]*content=["'](.*?)["']/i,
     );
@@ -1151,7 +760,6 @@ export class ConfluenceImportService {
       return title;
     }
 
-    // 4. Из атрибута data-page-title (часто используется в Confluence)
     const dataTitleMatch = html.match(/data-page-title=["'](.*?)["']/i);
     if (dataTitleMatch) {
       let title = dataTitleMatch[1].trim();
@@ -1162,14 +770,9 @@ export class ConfluenceImportService {
     return 'Untitled';
   }
 
-  // Добавь этот метод:
   private removePrefixBeforeColon(title: string): string {
-    // Удаляем всё что до первого ": " (двоеточие с пробелом)
-    // Пример: "AI_Copilot_SIGMA : ИИ-документы" -> "ИИ-документы"
-
     const colonIndex = title.indexOf(': ');
     if (colonIndex !== -1) {
-      // Проверяем, есть ли что-то после ": "
       const afterColon = title.substring(colonIndex + 2).trim();
       if (afterColon.length > 0) {
         return afterColon;

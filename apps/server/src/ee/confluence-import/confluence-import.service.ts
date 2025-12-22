@@ -346,13 +346,29 @@ export class ConfluenceImportService {
             currentRelativePath,
           );
         } else if (entry.isFile()) {
-          // Добавляем все файлы как кандидаты
+          // Добавляем файл
           candidates.set(currentRelativePath, fullPath);
 
           // Также добавляем варианты с декодированными пробелами
           if (currentRelativePath.includes('%20')) {
             const decodedPath = currentRelativePath.replace(/%20/g, ' ');
             candidates.set(decodedPath, fullPath);
+          }
+
+          // Для Confluence: добавляем путь без префикса папки attachments
+          // attachments/649959151/image.png -> 649959151/image.png
+          if (currentRelativePath.startsWith('attachments/')) {
+            const withoutAttachments = currentRelativePath.substring(12); // "attachments/".length
+            candidates.set(withoutAttachments, fullPath);
+
+            // Также для пути с только ID папки: 649959151/image.png
+            const parts = withoutAttachments.split('/');
+            if (parts.length > 1) {
+              const idFolder = parts[0];
+              const fileName = parts.slice(1).join('/');
+              // Добавляем как image.png (если нужно)
+              candidates.set(fileName, fullPath);
+            }
           }
         }
       }
@@ -365,12 +381,11 @@ export class ConfluenceImportService {
     baseDir: string,
     pageId: string,
   ): Promise<string | null> {
-    // Пробуем несколько вариантов поиска
+    // Пробуем найти файл разными способами
     const searchPatterns = [
-      `${pageId}.html`, // Точное совпадение по ID
-      `**/${pageId}.html`, // В поддиректориях
-      `**/*${pageId}*.html`, // Любой файл содержащий ID
-      `**/*${pageId}.html`, // Файл заканчивающийся на ID.html
+      `${pageId}.html`,
+      `**/${pageId}.html`,
+      `**/*${pageId}*.html`,
     ];
 
     for (const pattern of searchPatterns) {
@@ -382,7 +397,10 @@ export class ConfluenceImportService {
         if (files.length > 0) {
           // Берем первый найденный файл
           const relativePath = path.relative(baseDir, files[0]);
-          return relativePath.split(path.sep).join('/');
+          const normalizedPath = relativePath.split(path.sep).join('/');
+
+          this.logger.debug(`Found page ${pageId} at: ${normalizedPath}`);
+          return normalizedPath;
         }
       } catch (error) {
         this.logger.debug(
@@ -391,6 +409,27 @@ export class ConfluenceImportService {
       }
     }
 
+    // Если не нашли, проверяем специально для файлов с префиксом
+    try {
+      const allHtmlFiles = await this.findFilesByExtension(baseDir, '.html');
+      for (const file of allHtmlFiles) {
+        const fileName = path.basename(file, '.html');
+        // Проверяем, содержит ли имя файла ID страницы
+        if (fileName.includes(pageId)) {
+          const relativePath = path.relative(baseDir, file);
+          const normalizedPath = relativePath.split(path.sep).join('/');
+
+          this.logger.debug(
+            `Found page ${pageId} in file: ${fileName}.html at: ${normalizedPath}`,
+          );
+          return normalizedPath;
+        }
+      }
+    } catch (error) {
+      this.logger.debug(`Could not search HTML files: ${error}`);
+    }
+
+    this.logger.warn(`Could not find relative path for page ${pageId}`);
     return null;
   }
 
@@ -407,7 +446,6 @@ export class ConfluenceImportService {
         const fullPath = path.join(dir, entry.name);
 
         if (entry.isDirectory()) {
-          // Пропускаем системные папки
           if (entry.name === '__MACOSX' || entry.name.startsWith('.')) {
             continue;
           }
@@ -418,7 +456,13 @@ export class ConfluenceImportService {
           results.push(...subResults);
         } else if (entry.isFile() && entry.name.endsWith('.html')) {
           // Проверяем соответствие паттерну
-          if (this.matchesPattern(entry.name, pattern)) {
+          if (
+            this.fileMatchesPattern(
+              entry.name,
+              pattern,
+              path.relative(dir, fullPath),
+            )
+          ) {
             results.push(fullPath);
           }
         }
@@ -428,6 +472,67 @@ export class ConfluenceImportService {
     }
 
     return results;
+  }
+
+  private async findFilesByExtension(
+    dir: string,
+    extension: string,
+  ): Promise<string[]> {
+    const results: string[] = [];
+
+    try {
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+
+        if (entry.isDirectory()) {
+          if (entry.name === '__MACOSX' || entry.name.startsWith('.')) {
+            continue;
+          }
+          const subResults = await this.findFilesByExtension(
+            fullPath,
+            extension,
+          );
+          results.push(...subResults);
+        } else if (
+          entry.isFile() &&
+          entry.name.toLowerCase().endsWith(extension.toLowerCase())
+        ) {
+          results.push(fullPath);
+        }
+      }
+    } catch (error) {
+      // Пропускаем ошибки
+    }
+
+    return results;
+  }
+
+  private fileMatchesPattern(
+    fileName: string,
+    pattern: string,
+    filePath?: string,
+  ): boolean {
+    // Простая проверка соответствия
+    if (pattern.includes('**')) {
+      // Рекурсивный паттерн
+      const searchName = pattern.split('/').pop() || pattern;
+      if (searchName.includes('*')) {
+        // Паттерн с подстановкой
+        const regexPattern = searchName
+          .replace(/\*/g, '.*')
+          .replace(/\./g, '\\.');
+        const regex = new RegExp(`^${regexPattern}$`);
+        return regex.test(fileName);
+      } else {
+        // Простое имя файла
+        return fileName === searchName;
+      }
+    } else {
+      // Простой паттерн
+      return fileName === pattern;
+    }
   }
 
   private matchesPattern(fileName: string, pattern: string): boolean {

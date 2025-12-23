@@ -42,7 +42,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       return this.validateApiKey(req, payload as JwtApiKeyPayload);
     }
 
-    if (payload.type !== JwtType.ACCESS) {
+    if (payload.type.toUpperCase() !== JwtType.ACCESS.toUpperCase()) {
       throw new UnauthorizedException();
     }
 

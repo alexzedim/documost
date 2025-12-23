@@ -19,6 +19,6 @@ import { TokenService } from './services/token.service';
     }),
   ],
   providers: [TokenService],
-  exports: [TokenService],
+  exports: [JwtModule, TokenService],
 })
 export class TokenModule {}

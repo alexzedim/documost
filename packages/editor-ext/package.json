@@ -1,6 +1,5 @@
 {
   "name": "@docmost/editor-ext",
-  "homepage": "https://docmost.com",
   "private": true,
   "scripts": {
     "build": "tsc --build",

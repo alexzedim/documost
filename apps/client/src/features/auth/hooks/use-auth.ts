@@ -52,7 +52,6 @@ export default function useAuth() {
       }
     } catch (err) {
       setIsLoading(false);
-      console.log(err);
       notifications.show({
         message: err.response?.data.message,
         color: "red",
@@ -70,7 +69,7 @@ export default function useAuth() {
       if (response?.requiresLogin) {
         notifications.show({
           message: t(
-            "Account created successfully. Please log in to set up two-factor authentication.",
+            "Account created successfully. Please log in to set up two-factor authentication."
           ),
         });
         navigate(APP_ROUTE.AUTH.LOGIN);
@@ -97,7 +96,7 @@ export default function useAuth() {
         if (hostname && exchangeToken) {
           window.location.href = exchangeTokenRedirectUrl(
             hostname,
-            exchangeToken,
+            exchangeToken
           );
         }
       } else {
@@ -124,7 +123,7 @@ export default function useAuth() {
       if (response?.requiresLogin) {
         notifications.show({
           message: t(
-            "Password reset was successful. Please log in with your new password.",
+            "Password reset was successful. Please log in with your new password."
           ),
         });
         navigate(APP_ROUTE.AUTH.LOGIN);
@@ -158,7 +157,6 @@ export default function useAuth() {
 
       return true;
     } catch (err) {
-      console.log(err);
       setIsLoading(false);
       notifications.show({
         message: err.response?.data.message,
@@ -176,7 +174,6 @@ export default function useAuth() {
       await verifyUserToken(data);
       setIsLoading(false);
     } catch (err) {
-      console.log(err);
       setIsLoading(false);
       notifications.show({
         message: err.response?.data.message,

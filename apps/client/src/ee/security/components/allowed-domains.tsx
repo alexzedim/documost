@@ -40,7 +40,6 @@ export default function AllowedDomains() {
         message: t("Updated successfully"),
       });
     } catch (err) {
-      console.log(err);
       notifications.show({
         message: err.response.data.message,
         color: "red",
@@ -58,7 +57,7 @@ export default function AllowedDomains() {
         <Text size="md">{t("Allowed email domains")}</Text>
         <Text size="sm" c="dimmed">
           {t(
-            "Only users with email addresses from these domains can signup via SSO.",
+            "Only users with email addresses from these domains can signup via SSO."
           )}
         </Text>
       </div>
@@ -66,7 +65,7 @@ export default function AllowedDomains() {
         <TagsInput
           mt="sm"
           description={t(
-            "Enter valid domain names separated by comma or space",
+            "Enter valid domain names separated by comma or space"
           )}
           placeholder={t("e.g acme.com")}
           variant="filled"

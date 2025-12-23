@@ -132,7 +132,7 @@ function ImportFormatSelection({ spaceId, onClose }: ImportFormatSelection) {
         zipFileRef.current();
       }
     } catch (err) {
-      console.log("Failed to upload import file", err);
+      console.log("Failed to upload import file");
       notifications.update({
         id: "import",
         color: "red",
@@ -246,7 +246,7 @@ function ImportFormatSelection({ spaceId, onClose }: ImportFormatSelection) {
         pages.push(page);
         pageCount += 1;
       } catch (err) {
-        console.log("Failed to import page", err);
+        console.log("Failed to import page");
       }
     }
 

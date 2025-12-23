@@ -37,7 +37,7 @@ const recalculateLinks = (nodePos: NodePos[]) => {
       }
       return acc;
     },
-    [],
+    []
   );
   return { links, nodes };
 };
@@ -53,7 +53,7 @@ export const TableOfContents: FC<TableOfContentsProps> = (props) => {
     const { view } = props.editor;
 
     const headerOffset = parseInt(
-      window.getComputedStyle(headerPaddingRef.current).getPropertyValue("top"),
+      window.getComputedStyle(headerPaddingRef.current).getPropertyValue("top")
     );
 
     const { node } = view.domAtPos(position);
@@ -91,7 +91,7 @@ export const TableOfContents: FC<TableOfContentsProps> = (props) => {
     () => {
       handleUpdate();
     },
-    props.isShare ? [props.editor] : [],
+    props.isShare ? [props.editor] : []
   );
 
   useEffect(() => {
@@ -109,7 +109,7 @@ export const TableOfContents: FC<TableOfContentsProps> = (props) => {
         headerOffset = parseInt(
           window
             .getComputedStyle(headerPaddingRef.current)
-            .getPropertyValue("top"),
+            .getPropertyValue("top")
         );
       }
       const observerOptions: IntersectionObserverInit = {
@@ -119,7 +119,7 @@ export const TableOfContents: FC<TableOfContentsProps> = (props) => {
       };
       const observer = new IntersectionObserver(
         observeHandler,
-        observerOptions,
+        observerOptions
       );
 
       headingDOMNodes.forEach((heading) => {
@@ -131,7 +131,7 @@ export const TableOfContents: FC<TableOfContentsProps> = (props) => {
         });
       };
     } catch (err) {
-      console.log(err);
+      console.log("err");
     }
   }, [headingDOMNodes, props.editor]);
 

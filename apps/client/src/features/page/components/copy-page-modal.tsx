@@ -37,14 +37,14 @@ export default function CopyPageModal({
       queryClient.removeQueries({
         predicate: (item) =>
           ["pages", "sidebar-pages", "root-sidebar-pages"].includes(
-            item.queryKey[0] as string,
+            item.queryKey[0] as string
           ),
       });
 
       const pageUrl = buildPageUrl(
         copiedPage.space.slug,
         copiedPage.slugId,
-        copiedPage.title,
+        copiedPage.title
       );
       navigate(pageUrl);
       notifications.show({
@@ -57,7 +57,6 @@ export default function CopyPageModal({
         message: err.response?.data.message || "An error occurred",
         color: "red",
       });
-      console.log(err);
     }
   };
 

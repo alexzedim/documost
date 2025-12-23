@@ -36,7 +36,7 @@ export default function MovePageModal({
       queryClient.removeQueries({
         predicate: (item) =>
           ["pages", "sidebar-pages", "root-sidebar-pages"].includes(
-            item.queryKey[0] as string,
+            item.queryKey[0] as string
           ),
       });
 
@@ -52,7 +52,6 @@ export default function MovePageModal({
         message: err.response?.data.message || "An error occurred",
         color: "red",
       });
-      console.log(err);
     }
   };
 

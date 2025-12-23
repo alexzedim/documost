@@ -40,7 +40,7 @@ export default function DeleteSpaceModal({ space }: DeleteSpaceModalProps) {
       await deleteSpaceMutation.mutateAsync({ id: space.id, slug: space.slug });
       navigate(APP_ROUTE.HOME);
     } catch (error) {
-      console.error("Failed to delete space", error);
+      console.error("Failed to delete space");
     }
   };
 
@@ -58,7 +58,7 @@ export default function DeleteSpaceModal({ space }: DeleteSpaceModalProps) {
         <Divider size="xs" mb="xs" />
         <Text>
           {t(
-            "All pages, comments, attachments and permissions in this space will be deleted irreversibly.",
+            "All pages, comments, attachments and permissions in this space will be deleted irreversibly."
           )}
         </Text>
         <Text mt="sm">

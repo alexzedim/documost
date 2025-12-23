@@ -37,7 +37,7 @@ function ResolveComment({
 
       //
     } catch (error) {
-      console.error("Failed to toggle resolved state:", error);
+      console.error("Failed to toggle resolved state:");
     }
   };
 

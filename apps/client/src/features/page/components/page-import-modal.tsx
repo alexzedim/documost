@@ -218,7 +218,7 @@ function ImportFormatSelection({ spaceId, onClose }: ImportFormatSelection) {
         });
         clearInterval(intervalId);
         setFileTaskId(null);
-        console.error("Failed to fetch import status", err);
+        console.error("Failed to fetch import status");
       }
     }, 3000);
   }, [fileTaskId]);

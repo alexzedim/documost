@@ -23,7 +23,7 @@ export default function MathBlockView(props: NodeViewProps) {
 
   const renderMath = (
     katexString: string,
-    container: HTMLDivElement | null,
+    container: HTMLDivElement | null
   ) => {
     try {
       katex.render(katexString, container!, {
@@ -32,7 +32,6 @@ export default function MathBlockView(props: NodeViewProps) {
       });
       setError(null);
     } catch (e) {
-      //console.error(e.message);
       setError(e.message);
     }
   };

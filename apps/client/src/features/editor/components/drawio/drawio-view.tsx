@@ -54,7 +54,7 @@ export default function DrawioView(props: NodeViewProps) {
         };
       }
     } catch (err) {
-      console.error(err);
+      console.error("err");
     } finally {
       open();
     }
@@ -135,7 +135,7 @@ export default function DrawioView(props: NodeViewProps) {
             alt={title}
             className={clsx(
               selected ? "ProseMirror-selectednode" : "",
-              "alignCenter",
+              "alignCenter"
             )}
           />
 

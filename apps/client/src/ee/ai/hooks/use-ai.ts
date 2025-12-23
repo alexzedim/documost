@@ -19,8 +19,8 @@ export function useAiStream() {
           onChunk: (chunk) => {
             setContent((prev) => prev + chunk.content);
           },
-          onError: (error) => {
-            console.error("AI stream error:", error);
+          onError: (_) => {
+            console.error("AI stream error");
             setIsStreaming(false);
           },
           onComplete: () => {
@@ -30,7 +30,7 @@ export function useAiStream() {
 
         abortControllerRef.current = controller;
       } catch (error) {
-        console.error("Failed to start stream:", error);
+        console.error("Failed to start stream");
         setIsStreaming(false);
       }
     },

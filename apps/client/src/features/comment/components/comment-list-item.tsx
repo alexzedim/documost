@@ -66,7 +66,7 @@ function CommentListItem({
         pageId: pageId,
       });
     } catch (error) {
-      console.error("Failed to update comment:", error);
+      console.error("Failed to update comment");
     } finally {
       setIsLoading(false);
     }
@@ -82,16 +82,16 @@ function CommentListItem({
         pageId: pageId,
       });
     } catch (error) {
-      console.error("Failed to delete comment:", error);
+      console.error("Failed to delete comment");
     }
   }
 
   async function handleResolveComment() {
     if (!isCloudEE) return;
-    
+
     try {
       const isResolved = comment.resolvedAt != null;
-      
+
       await resolveCommentMutation.mutateAsync({
         commentId: comment.id,
         pageId: comment.pageId,
@@ -107,13 +107,13 @@ function CommentListItem({
         pageId: pageId,
       });
     } catch (error) {
-      console.error("Failed to toggle resolved state:", error);
+      console.error("Failed to toggle resolved state");
     }
   }
 
   function handleCommentClick(comment: IComment) {
     const el = document.querySelector(
-      `.comment-mark[data-comment-id="${comment.id}"]`,
+      `.comment-mark[data-comment-id="${comment.id}"]`
     );
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -156,7 +156,8 @@ function CommentListItem({
                 />
               )}
 
-              {(currentUser?.user?.id === comment.creatorId || userSpaceRole === 'admin') && (
+              {(currentUser?.user?.id === comment.creatorId ||
+                userSpaceRole === "admin") && (
                 <CommentMenu
                   onEditComment={handleEditToggle}
                   onDeleteComment={handleDeleteComment}

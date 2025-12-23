@@ -8,7 +8,7 @@ export default function ManageBilling() {
       const portalLink = await getBillingPortalLink();
       window.location.href = portalLink.url;
     } catch (err) {
-      console.error("Failed to get billing portal link", err);
+      console.error("Failed to get billing portal link");
     }
   };
 

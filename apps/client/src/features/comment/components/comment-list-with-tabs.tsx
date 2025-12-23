@@ -41,7 +41,6 @@ function CommentListWithTabs() {
   const spaceRules = space?.membership?.permissions;
   const spaceAbility = useSpaceAbility(spaceRules);
 
-
   const canComment: boolean = spaceAbility.can(
     SpaceCaslAction.Manage,
     SpaceCaslSubject.Page
@@ -84,7 +83,7 @@ function CommentListWithTabs() {
           pageId: page?.id,
         });
       } catch (error) {
-        console.error("Failed to post comment:", error);
+        console.error("Failed to post comment");
       } finally {
         setIsLoading(false);
       }
@@ -199,7 +198,14 @@ function CommentListWithTabs() {
   }
 
   return (
-    <div style={{ height: "85vh", display: "flex", flexDirection: "column", marginTop: '-15px' }}>
+    <div
+      style={{
+        height: "85vh",
+        display: "flex",
+        flexDirection: "column",
+        marginTop: "-15px",
+      }}
+    >
       <Tabs defaultValue="open" variant="default" style={{ flex: "0 0 auto" }}>
         <Tabs.List justify="center">
           <Tabs.Tab

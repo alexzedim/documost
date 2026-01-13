@@ -277,4 +277,24 @@ export class EnvironmentService {
       'http://localhost:11434',
     );
   }
+
+  getKeycloakUrl(): string {
+    return this.configService.get<string>('KEYCLOAK_URL', 'http://localhost:3100');
+  }
+
+  getKeycloakRealm(): string {
+    return this.configService.get<string>('KEYCLOAK_REALM', 'realm');
+  }
+
+  getKeycloakClientId(): string {
+    return this.configService.get<string>('KEYCLOAK_CLIENT_ID', '');
+  }
+
+  getKeycloakSecret(): string {
+    return this.configService.get<string>('KEYCLOAK_CLIENT_SECRET', '');
+  }
+
+  getKaspeskySsl(): string {
+    return this.configService.get<string>('KASPERSKY_CONTENT', '');
+  }
 }

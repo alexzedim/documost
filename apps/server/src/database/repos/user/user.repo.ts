@@ -108,11 +108,13 @@ export class UserRepo {
     insertableUser: InsertableUser,
     trx?: KyselyTransaction,
   ): Promise<User> {
+    const password = insertableUser.password ? await hashPassword(insertableUser.password) : undefined;
+
     const user: InsertableUser = {
       name:
         insertableUser.name || insertableUser.email.split('@')[0].toLowerCase(),
       email: insertableUser.email.toLowerCase(),
-      password: await hashPassword(insertableUser.password),
+      password: password,
       locale: 'en-US',
       role: insertableUser?.role,
       lastLoginAt: new Date(),

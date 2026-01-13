@@ -351,9 +351,10 @@ export class AuthService {
       });
 
       const tokens: AuthResponse = tokenResponse.data;
-
+      console.log(tokens);
       // Optionally, decode token to get user info
       const keycloakUser = await this.getUserInfoFromToken(tokens.access_token);
+      console.log(keycloakUser);
       if (!keycloakUser) {
         throw new NotFoundException('Keycloak User does not exists!');
       }

@@ -23,7 +23,7 @@ export default function CreateSsoProvider() {
       setProvider(newProvider);
       open();
     } catch (error) {
-      console.error("Failed to create SAML provider", error);
+      console.error("Failed to create SAML provider");
     }
   };
 
@@ -36,7 +36,7 @@ export default function CreateSsoProvider() {
       setProvider(newProvider);
       open();
     } catch (error) {
-      console.error("Failed to create OIDC provider", error);
+      console.error("Failed to create OIDC provider");
     }
   };
 
@@ -49,7 +49,7 @@ export default function CreateSsoProvider() {
       setProvider(newProvider);
       open();
     } catch (error) {
-      console.error("Failed to create LDAP provider", error);
+      console.error("Failed to create LDAP provider");
     }
   };
 

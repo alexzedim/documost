@@ -20,13 +20,12 @@ export default function MathInlineView(props: NodeViewProps) {
 
   const renderMath = (
     katexString: string,
-    container: HTMLDivElement | null,
+    container: HTMLDivElement | null
   ) => {
     try {
       katex.render(katexString, container);
       setError(null);
     } catch (e) {
-      //console.error(e);
       setError(e.message);
     }
   };

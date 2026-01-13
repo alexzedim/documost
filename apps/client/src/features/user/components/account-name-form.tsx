@@ -41,7 +41,6 @@ export default function AccountNameForm() {
         message: t("Updated successfully"),
       });
     } catch (err) {
-      console.log(err);
       notifications.show({
         message: t("Failed to update data"),
         color: "red",

@@ -35,7 +35,7 @@ export default function AvatarUploader({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileInputChange = async (
-    event: React.ChangeEvent<HTMLInputElement>,
+    event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
     if (!file || disabled) {
@@ -58,8 +58,7 @@ export default function AvatarUploader({
 
     try {
       await onUpload(file);
-    } catch (error) {
-      console.error(error);
+    } catch {
       notifications.show({
         message: t("Failed to upload image"),
         color: "red",
@@ -88,8 +87,7 @@ export default function AvatarUploader({
       notifications.show({
         message: t("Image removed successfully"),
       });
-    } catch (error) {
-      console.error(error);
+    } catch {
       notifications.show({
         message: t("Failed to remove image"),
         color: "red",

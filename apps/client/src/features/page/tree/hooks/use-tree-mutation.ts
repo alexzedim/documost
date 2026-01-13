@@ -191,7 +191,7 @@ export function useTreeMutation<T>(spaceId: string) {
         });
       }, 50);
     } catch (error) {
-      console.error("Error moving page:", error);
+      console.error("Error moving page");
     }
   };
 
@@ -202,7 +202,7 @@ export function useTreeMutation<T>(spaceId: string) {
     try {
       updatePageMutation.mutateAsync({ pageId: id, title: name });
     } catch (error) {
-      console.error("Error updating page title:", error);
+      console.error("Error updating page title");
     }
   };
 
@@ -247,7 +247,7 @@ export function useTreeMutation<T>(spaceId: string) {
         });
       }, 50);
     } catch (error) {
-      console.error("Failed to delete page:", error);
+      console.error("Failed to delete page");
     }
   };
 

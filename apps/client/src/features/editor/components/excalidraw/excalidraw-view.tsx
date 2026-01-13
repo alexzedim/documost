@@ -28,7 +28,7 @@ import { localStorageLibraryAdapter } from "@/features/editor/components/excalid
 const Excalidraw = lazy(() =>
   import("@excalidraw/excalidraw").then((module) => ({
     default: module.Excalidraw,
-  })),
+  }))
 );
 
 export default function ExcalidrawView(props: NodeViewProps) {
@@ -65,7 +65,7 @@ export default function ExcalidrawView(props: NodeViewProps) {
         setExcalidrawData(data);
       }
     } catch (err) {
-      console.error(err);
+      console.error("err");
     } finally {
       open();
     }
@@ -92,7 +92,7 @@ export default function ExcalidrawView(props: NodeViewProps) {
 
     svgString = svgString.replace(
       /https:\/\/unpkg\.com\/@excalidraw\/excalidraw@undefined/g,
-      "https://unpkg.com/@excalidraw/excalidraw@latest",
+      "https://unpkg.com/@excalidraw/excalidraw@latest"
     );
 
     const fileName = "diagram.excalidraw.svg";
@@ -173,7 +173,7 @@ export default function ExcalidrawView(props: NodeViewProps) {
             alt={title}
             className={clsx(
               selected ? "ProseMirror-selectednode" : "",
-              "alignCenter",
+              "alignCenter"
             )}
           />
 

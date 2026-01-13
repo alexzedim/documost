@@ -15,8 +15,8 @@ export default function AppVersion() {
       appVersion &&
       parseFloat(appVersion.latestVersion) > 0 &&
       semverGt(appVersion.latestVersion, appVersion.currentVersion);
-  } catch (err) {
-    console.error(err);
+  } catch {
+    console.error("appVersion err");
   }
 
   return (
@@ -38,7 +38,7 @@ export default function AppVersion() {
           onClick={() => {
             window.open(
               "https://github.com/docmost/docmost/releases",
-              "_blank",
+              "_blank"
             );
           }}
         >

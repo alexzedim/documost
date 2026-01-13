@@ -45,12 +45,13 @@ export class AuthService {
     private userTokenRepo: UserTokenRepo,
     private mailService: MailService,
     private domainService: DomainService,
+    // @InjectRedis() private readonly redisClient: Redis,
     @InjectKysely() private readonly db: KyselyDB,
   ) {}
 
-  async login(loginDto: LoginDto, workspaceId: string) {
-    // @todo Generate unique device identifier based on request fingerprint
-    // const deviceIdentifier = generateDeviceIdentifier(req);
+  async login(req: FastifyRequest, loginDto: LoginDto, workspaceId: string) {
+    // Generate unique device identifier based on request fingerprint
+    const deviceIdentifier = this.generateDeviceIdentifier(req);
 
     const { email, password } = loginDto;
 

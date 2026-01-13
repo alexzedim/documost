@@ -4,10 +4,9 @@ npm config set strict-ssl false
 
 pnpm install --unsafe-perm
 
-# База данных
+# База данных - _тестовый композ, который запускает только постгрю и редис_
 
 docker-compose -f docker-compose.db.yml up -d
-_тестовый композ, который запускает только постгрю и редис_
 
 # Миграции
 
@@ -19,7 +18,7 @@ pnpm run migration:latest
 
 # in .env
 
-APP_SECRET: "minimum of 32 characters. Generate one with: openssl rand -hex 32"
+APP_SECRET: "openssl rand -hex 32"
 
 # Cобираем editor-ext:
 
@@ -29,7 +28,7 @@ pnpm nx run @docmost/editor-ext:build
 
 pnpm run dev
 
-либо отдельно:
+_либо отдельно:_
 
 pnpm run client:dev
 

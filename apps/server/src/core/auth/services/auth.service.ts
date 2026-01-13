@@ -33,6 +33,8 @@ import { VerifyUserTokenDto } from '../dto/verify-user-token.dto';
 import { DomainService } from '../../../integrations/environment/domain.service';
 import { EnvironmentService } from '../../../integrations/environment/environment.service';
 import { AuthResponse, KeycloakAuthUser, KeyCloakUserInfo } from 'src/core/auth/dto/keycloak-payload';
+import { FastifyRequest } from 'fastify';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -375,5 +377,24 @@ export class AuthService {
 
       return undefined;
     }
+  }
+
+
+  private generateDeviceIdentifier(req: FastifyRequest): string {
+    // Collect primary components
+    const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+
+    // Collect secondary components if available
+    const acceptLanguage = req.headers['accept-language'] || '';
+    const acceptEncoding = req.headers['accept-encoding'] || '';
+
+    // Create fingerprint string with components
+    const fingerprintString = `${ip}|${userAgent}|${acceptLanguage}|${acceptEncoding}`;
+    console.log(fingerprintString);
+    const hash = crypto.createHash('sha256');
+    hash.update(fingerprintString);
+
+    return hash.digest('hex');
   }
 }

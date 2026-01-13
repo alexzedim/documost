@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios';
+import { Agent } from 'node:https';
 import { AuthController } from './auth.controller';
 import { AuthService } from './services/auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -8,7 +10,15 @@ import { TokenModule } from './token.module';
 import { MfaModule } from '../../ee/mfa/mfa.module.js';
 
 @Module({
-  imports: [TokenModule, WorkspaceModule, MfaModule],
+  imports: [
+    HttpModule.register({
+      // @todo add CA cert
+      httpsAgent: new Agent({ rejectUnauthorized: false }),
+    }),
+    TokenModule,
+    WorkspaceModule,
+    MfaModule
+  ],
   controllers: [AuthController],
   providers: [AuthService, SignupService, JwtStrategy],
   exports: [SignupService],

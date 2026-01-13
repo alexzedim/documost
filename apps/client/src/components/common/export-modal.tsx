@@ -46,9 +46,9 @@ export default function ExportModal({
         await exportSpace({ spaceId: id, format, includeAttachments });
       }
       onClose();
-    } catch {
+    } catch (err: any) {
       notifications.show({
-        message: "Export failed:" + err.response?.data.message,
+        message: "Export failed: " + (err.response?.data.message || err.message),
         color: "red",
       });
     }

@@ -1,6 +1,9 @@
 import {
   BadRequestException,
+  HttpException,
+  HttpStatus,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -35,19 +38,26 @@ import { EnvironmentService } from '../../../integrations/environment/environmen
 import { AuthResponse, KeycloakAuthUser, KeyCloakUserInfo } from 'src/core/auth/dto/keycloak-payload';
 import { FastifyRequest } from 'fastify';
 import * as crypto from 'crypto';
+import { RedisService } from '@nestjs-labs/nestjs-ioredis';
+import { CreateWorkspaceDto } from 'src/core/workspace/dto/create-workspace.dto';
+import { WorkspaceService } from 'src/core/workspace/services/workspace.service';
+import { UserRole } from 'src/common/helpers/types/permission';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly httpService: HttpService,
     private environmentService: EnvironmentService,
+    private workspaceService: WorkspaceService,
     private signupService: SignupService,
     private tokenService: TokenService,
     private userRepo: UserRepo,
     private userTokenRepo: UserTokenRepo,
     private mailService: MailService,
     private domainService: DomainService,
-    // @InjectRedis() private readonly redisClient: Redis,
+    private redisService: RedisService,
     @InjectKysely() private readonly db: KyselyDB,
   ) {}
 
@@ -69,6 +79,8 @@ export class AuthService {
     //  return await this.authAsRoot(email, password, deviceIdentifier, req);
     // }
 
+    await this.checkLoginLockout(deviceIdentifier);
+
     const keycloakUser = await this.authKeycloakProvider(email, password);
     if (!keycloakUser) {
       throw new UnauthorizedException('Email not found');
@@ -79,12 +91,37 @@ export class AuthService {
     });
 
     if (!user) {
-      user = await this.userRepo.insertUser({
-        name: keycloakUser.username,
-        email: keycloakUser.email,
-        password: keycloakUser.email,
-        workspaceId: workspaceId,
-      });
+      await executeTx(
+        this.db,
+        async (trx) => {
+          // create user
+          user = await this.userRepo.insertUser(
+            {
+              name: keycloakUser.username,
+              email: keycloakUser.email,
+              role: UserRole.ADMIN,
+              invitedById: keycloakUser.id,
+              workspaceId: workspaceId,
+            },
+            trx,
+          );
+
+          // create workspace with full setup
+          const workspaceData: CreateWorkspaceDto = {
+            name: user.name || 'My workspace',
+            // hostname: createAdminUserDto.hostname,
+          };
+
+          const workspace = await this.workspaceService.create(
+            user,
+            workspaceData,
+            trx,
+          );
+
+          user.workspaceId = workspace.id;
+          return user;
+        }
+      );
     }
 
     if (!user || user?.deletedAt) {
@@ -396,5 +433,35 @@ export class AuthService {
     hash.update(fingerprintString);
 
     return hash.digest('hex');
+  }
+
+    /**
+   * Check if user/IP is currently locked out
+   * @param identifier - User identifier (email, IP, or combination)
+   * @throws HttpException if locked out
+   */
+  private async checkLoginLockout(identifier: string): Promise<void> {
+    const lockoutKey = `login:locked:${identifier}`;
+    const redisClient = this.redisService.getOrThrow();
+    const ttl = await redisClient.ttl(lockoutKey);
+
+    if (ttl > 0) {
+      const minutes = Math.ceil(ttl / 60);
+      this.logger.warn(
+        `Login attempt blocked for ${identifier}. Locked for ${minutes} more minutes`,
+      );
+
+      // Get localized error message
+      const message = 'Слишком много неудачных попыток входа.';
+
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+          message,
+          retryAfter: ttl,
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
   }
 }

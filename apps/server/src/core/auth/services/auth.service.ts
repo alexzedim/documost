@@ -4,6 +4,8 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { Agent } from 'node:https';
 import { LoginDto } from '../dto/login.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { TokenService } from './token.service';
@@ -29,10 +31,14 @@ import { InjectKysely } from 'nestjs-kysely';
 import { executeTx } from '@docmost/db/utils';
 import { VerifyUserTokenDto } from '../dto/verify-user-token.dto';
 import { DomainService } from '../../../integrations/environment/domain.service';
+import { EnvironmentService } from '../../../integrations/environment/environment.service';
+import { AuthResponse, KeycloakAuthUser, KeyCloakUserInfo } from 'src/core/auth/dto/keycloak-payload';
 
 @Injectable()
 export class AuthService {
   constructor(
+    private readonly httpService: HttpService,
+    private environmentService: EnvironmentService,
     private signupService: SignupService,
     private tokenService: TokenService,
     private userRepo: UserRepo,
@@ -43,22 +49,43 @@ export class AuthService {
   ) {}
 
   async login(loginDto: LoginDto, workspaceId: string) {
-    const user = await this.userRepo.findByEmail(loginDto.email, workspaceId, {
+    // @todo Generate unique device identifier based on request fingerprint
+    // const deviceIdentifier = generateDeviceIdentifier(req);
+
+    const { email, password } = loginDto;
+
+    if (!email || !password) {
+      throw new BadRequestException('Email and password are required');
+    }
+
+    // Check if user is locked out due to too many failed attempts (using device fingerprint)
+    // await this.checkLoginLockout(deviceIdentifier);
+
+    // const isRoot = email === appConfig.rootLogin;
+    // if (isRoot) {
+    //  return await this.authAsRoot(email, password, deviceIdentifier, req);
+    // }
+
+    const keycloakUser = await this.authKeycloakProvider(email, password);
+    if (!keycloakUser) {
+      throw new UnauthorizedException('Email not found');
+    }
+
+    let user = await this.userRepo.findByEmail(email, workspaceId, {
       includePassword: true,
     });
 
-    const errorMessage = 'Email or password does not match';
-    if (!user || user?.deletedAt) {
-      throw new UnauthorizedException(errorMessage);
+    if (!user) {
+      user = await this.userRepo.insertUser({
+        name: keycloakUser.username,
+        email: keycloakUser.email,
+        password: keycloakUser.email,
+        workspaceId: workspaceId,
+      });
     }
 
-    const isPasswordMatch = await comparePasswordHash(
-      loginDto.password,
-      user.password,
-    );
-
-    if (!isPasswordMatch) {
-      throw new UnauthorizedException(errorMessage);
+    if (!user || user?.deletedAt) {
+      throw new UnauthorizedException('Email or password does not match');
     }
 
     user.lastLoginAt = new Date();
@@ -246,5 +273,106 @@ export class AuthService {
       workspaceId,
     );
     return { token };
+  }
+
+  async authKeycloakProvider(
+    email: string,
+    password: string,
+  ): Promise<KeycloakAuthUser | undefined> {
+    const logTag = this.authKeycloakProvider.name;
+
+    const keycloak = this.environmentService.getKeycloakUrl();
+    const realm = this.environmentService.getKeycloakRealm();
+    const clientId = this.environmentService.getKeycloakClientId();
+    const secret = this.environmentService.getKeycloakSecret();
+
+    try {
+      // Keycloak token endpoint
+      const tokenUrl = `${keycloak}/realms/${realm}/protocol/openid-connect/token`;
+
+      const tokenParams = {
+        grant_type: 'password',
+        client_id: clientId,
+        client_secret: secret,
+        username: email,
+        password: password,
+        scope: 'openid profile email',
+      };
+
+      // Get token from Keycloak - Axios will automatically serialize the object
+      const tokenResponse = await this.httpService.axiosRef.request<AuthResponse>({
+        method: 'POST',
+        url: tokenUrl,
+        data: tokenParams,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        httpsAgent: new Agent({ rejectUnauthorized: false }),
+      });
+
+      const tokens: AuthResponse = tokenResponse.data;
+
+      // Optionally, decode token to get user info
+      const keycloakUser = await this.getUserInfoFromToken(tokens.access_token);
+      if (!keycloakUser) {
+        throw new NotFoundException('Keycloak User does not exists!');
+      }
+
+      const externalId = keycloakUser.id;
+      const externalEmail = keycloakUser.email;
+
+      if (!externalId || !externalEmail) {
+        throw new BadRequestException('Email not found in Keycloak');
+      }
+
+      return keycloakUser;
+    } catch (error) {
+      console.log({ logTag, message: 'check keycloak integration', error: error });
+
+      return undefined;
+    }
+  }
+
+    /**
+   * Helper method to extract user info from JWT token
+   */
+  private async getUserInfoFromToken(accessToken: string): Promise<KeycloakAuthUser | undefined> {
+    const logTag = this.getUserInfoFromToken.name;
+    
+    const keycloak = this.environmentService.getKeycloakUrl();
+    const realm = this.environmentService.getKeycloakRealm();
+
+    try {
+      // Get user info from Keycloak userinfo endpoint
+      const userInfoUrl = `${keycloak}/realms/${realm}/protocol/openid-connect/userinfo`;
+
+      const userInfoResponse = await this.httpService.axiosRef.get<KeyCloakUserInfo>(userInfoUrl, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        httpsAgent: new Agent({ rejectUnauthorized: false }),
+      });
+
+      const userInfo: KeyCloakUserInfo = userInfoResponse.data;
+
+      return userInfo
+        ? {
+            id: userInfo.sub,
+            username: userInfo.preferred_username,
+            email: userInfo.email,
+            firstName: userInfo.given_name,
+            lastName: userInfo.family_name,
+            roles: userInfo.realm_access?.roles || [],
+          }
+        : undefined;
+    } catch (error) {
+      console.error({
+        logTag,
+        message: 'Error getting user info:',
+        error: error,
+      });
+
+      return undefined;
+    }
   }
 }

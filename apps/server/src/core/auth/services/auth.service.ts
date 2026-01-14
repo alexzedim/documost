@@ -61,10 +61,10 @@ export class AuthService {
   ) {}
 
   async login(req: FastifyRequest, loginDto: LoginDto, workspaceId: string) {
+    const deviceIdentifier = this.generateDeviceIdentifier(req);
+
     try {
       // Generate unique device identifier based on request fingerprint
-      const deviceIdentifier = this.generateDeviceIdentifier(req);
-
       const { email, password } = loginDto;
 
       if (!email || !password) {
@@ -88,7 +88,6 @@ export class AuthService {
           if (!user) {
             user = await this.userRepo.insertUser({
               name: keycloakUser.username,
-              description: keycloakUser.id,
               email: keycloakUser.email,
               workspaceId: workspaceId,
             });

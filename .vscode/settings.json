@@ -1,0 +1,21 @@
+{
+  "files.watcherExclude": {
+    "/node_modules/": true,
+    "/bower_components/": true,
+    "/.git/objects/": true,
+    "/.hg/store/": true,
+    "/.vscode/extensions/": true
+  },
+  "search.exclude": {
+    "/node_modules/": true,
+    "/bower_components/": true,
+    "/.git/objects/": true,
+    "/.hg/store/": true,
+    "/dist/": true
+  },
+  "files.exclude": {
+    "/node_modules/": true,
+    "/bower_components/": true,
+    "/.vscode/": true
+  }
+}

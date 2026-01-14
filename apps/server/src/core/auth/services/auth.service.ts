@@ -465,13 +465,13 @@ export class AuthService {
    * @returns Remaining attempts before lockout
    */
   private async recordFailedLoginAttempt(identifier: string): Promise<number> {
-    const attemptsKey = this.getLoginAttemptsKey(identifier);
-    const lockoutKey = this.getLoginLockoutKey(identifier);
+    const attemptsKey = `login:attempts:${identifier}`;
+    const lockoutKey = `login:locked:${identifier}`;
 
     const redisClient = this.redisService.getOrThrow();
 
     const timeoutSeconds = this.environmentService.getLoginTimeourSeconds();
-    const maxAttempts = this.environmentService.getKeycloakUrl();
+    const maxAttempts = this.environmentService.getLoginMaxAttempts();
 
     // Increment attempt counter
     const attempts = await redisClient.incr(attemptsKey);

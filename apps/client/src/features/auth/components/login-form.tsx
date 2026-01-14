@@ -63,6 +63,14 @@ export function LoginForm() {
 
   return (
     <Container size={420} className={classes.container}>
+      <div className={classes.disclaimer}>
+        Система находится в опытной эксплуатации.
+        <br />
+        Размещение персональных данных, коммерческой тайны и прочей
+        чувствительной информации
+        <br />
+        <span style={{ color: "red" }}>ЗАПРЕЩЕНО</span>!
+      </div>
       <Box p="xl" className={classes.containerBox}>
         <Title order={2} ta="center" fw={500} mb="md">
           {t("Login")}

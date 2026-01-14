@@ -29,13 +29,13 @@ export default function AccountSettings() {
 
       <ChangeEmail />
 
-      <Divider my="lg" />
+      {/* <Divider my="lg" /> */}
 
-      <ChangePassword />
+      {/* <ChangePassword /> */}
 
-      <Divider my="lg" />
+      {/* <Divider my="lg" />
 
-      <AccountMfaSection />
+      <AccountMfaSection /> */}
     </>
   );
 }

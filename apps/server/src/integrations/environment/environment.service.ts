@@ -299,10 +299,10 @@ export class EnvironmentService {
   }
 
   getLoginMaxAttempts(): number {
-    return this.configService.get<number>('LOGIN_MAX_ATTEMPTS', 10);
+    return parseInt(this.configService.get<string>('LOGIN_MAX_ATTEMPTS', '10'));
   }
   
   getLoginTimeourSeconds(): number {
-    return this.configService.get<number>('LOGIN_TIMEOUT_SECONDS', 60);
+    return parseInt(this.configService.get<string>('LOGIN_TIMEOUT_SECONDS', '60'));
   }
 }

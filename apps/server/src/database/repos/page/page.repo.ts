@@ -454,4 +454,37 @@ export class PageRepo {
       .selectAll()
       .execute();
   }
+
+  /**
+   * Retrieves all page IDs with optional pagination (skip and limit).
+   * Soft-deleted pages are excluded.
+   *
+   * @param pagination - Pagination options with optional skip and limit.
+   * @param pagination.skip - Number of records to skip (offset).
+   * @param pagination.limit - Maximum number of records to return.
+   * @param workspaceId - Optional workspace ID to filter pages by workspace.
+   * @returns Promise<Array<Pick<Page, 'id'>>>
+   */
+  async getAllPageIds(pagination: PaginationOptions, workspaceId?: string) {
+    let query = this.db
+      .selectFrom('pages')
+      .select('id')
+      .where('deletedAt', 'is', null);
+
+    if (workspaceId) {
+      query = query.where('workspaceId', '=', workspaceId);
+    }
+
+    query = query.orderBy('id'); // Ensures consistent pagination
+
+    const petPage = pagination.limit === 20 ? 250_000 : pagination.limit;
+
+    const result = executeWithPagination(query, {
+      page: pagination.page,
+      perPage: petPage,
+      hasEmptyIds: false,
+    });
+
+    return await result;
+  }
 }

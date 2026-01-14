@@ -9,13 +9,13 @@ import {
   Button,
   PasswordInput,
   Box,
-  Anchor,
-  Group,
+  // Anchor,
+  // Group,
 } from "@mantine/core";
 import classes from "./auth.module.css";
 import { useRedirectIfAuthenticated } from "@/features/auth/hooks/use-redirect-if-authenticated.ts";
-import { Link } from "react-router-dom";
-import APP_ROUTE from "@/lib/app-route.ts";
+// import { Link } from "react-router-dom";
+// import APP_ROUTE from "@/lib/app-route.ts";
 import { useTranslation } from "react-i18next";
 import SsoLogin from "@/ee/components/sso-login.tsx";
 import { useWorkspacePublicDataQuery } from "@/features/workspace/queries/workspace-query.ts";
@@ -54,7 +54,7 @@ export function LoginForm() {
   }
 
   if (isDataLoading) {
-   return null;
+    return null;
   }
 
   if (isError && error?.["response"]?.status === 404) {
@@ -90,7 +90,7 @@ export function LoginForm() {
                 {...form.getInputProps("password")}
               />
 
-              <Group justify="flex-end" mt="sm">
+              {/* <Group justify="flex-end" mt="sm">
                 <Anchor
                   to={APP_ROUTE.AUTH.FORGOT_PASSWORD}
                   component={Link}
@@ -99,7 +99,7 @@ export function LoginForm() {
                 >
                   {t("Forgot your password?")}
                 </Anchor>
-              </Group>
+              </Group> */}
 
               <Button type="submit" fullWidth mt="md" loading={isLoading}>
                 {t("Sign In")}

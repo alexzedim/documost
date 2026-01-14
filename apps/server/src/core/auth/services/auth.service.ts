@@ -39,6 +39,7 @@ import { AuthResponse, KeycloakAuthUser, KeyCloakUserInfo } from 'src/core/auth/
 import { FastifyRequest } from 'fastify';
 import * as crypto from 'crypto';
 import { RedisService } from '@nestjs-labs/nestjs-ioredis';
+import { SpaceService } from 'src/core/space/services/space.service';
 
 @Injectable()
 export class AuthService {
@@ -48,6 +49,7 @@ export class AuthService {
     private readonly httpService: HttpService,
     private environmentService: EnvironmentService,
     private signupService: SignupService,
+    private spaceService: SpaceService,
     private tokenService: TokenService,
     private userRepo: UserRepo,
     private userTokenRepo: UserTokenRepo,
@@ -107,6 +109,12 @@ export class AuthService {
               name: keycloakUser.username,
               email: keycloakUser.email,
               workspaceId: workspaceId,
+            });
+
+            await this.spaceService.createSpace(user, workspaceId, {
+              name: `${user.name}'s space`,
+              description: 'Your personal space',
+              slug: `${user.name}-${user.email}`.replace(' ', '-').toLowerCase(),
             });
           }
       }

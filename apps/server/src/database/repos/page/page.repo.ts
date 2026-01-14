@@ -468,14 +468,14 @@ export class PageRepo {
   async getAllPageIds(pagination: PaginationOptions, workspaceId?: string) {
     let query = this.db
       .selectFrom('pages')
-      .select('id')
+      .select(this.baseFields)
       .where('deletedAt', 'is', null);
 
     if (workspaceId) {
       query = query.where('workspaceId', '=', workspaceId);
     }
 
-    query = query.orderBy('id'); // Ensures consistent pagination
+    query = query.orderBy('createdAt', 'desc'); // Ensures consistent pagination
 
     const petPage = pagination.limit === 20 ? 250_000 : pagination.limit;
 

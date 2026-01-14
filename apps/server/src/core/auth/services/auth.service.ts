@@ -98,7 +98,7 @@ export class AuthService {
           const keycloakUser = await this.authKeycloakProvider(email, password);
 
           if (!keycloakUser) {
-            throw new UnauthorizedException('Email not found');
+            throw new UnauthorizedException('Domain user not found');
           }
 
           if (!user) {
@@ -112,7 +112,7 @@ export class AuthService {
       }
 
       if (!user || user?.deletedAt) {
-        throw new UnauthorizedException('Email or password does not match');
+        throw new UnauthorizedException('User not found');
       }
 
       user.lastLoginAt = new Date();

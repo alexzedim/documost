@@ -108,8 +108,8 @@ export class UserRepo {
     insertableUser: InsertableUser,
     trx?: KyselyTransaction,
   ): Promise<User> {
-    const password = insertableUser.password ? await hashPassword(insertableUser.password) : undefined;
-
+    const password = insertableUser.password ? await hashPassword(insertableUser.password) : null;
+    console.log(password);
     const user: InsertableUser = {
       name:
         insertableUser.name || insertableUser.email.split('@')[0].toLowerCase(),
@@ -120,10 +120,13 @@ export class UserRepo {
       lastLoginAt: new Date(),
     };
 
+    const userEntity = { ...insertableUser, ...user };
+
+    console.log(userEntity);
     const db = dbOrTx(this.db, trx);
     return db
       .insertInto('users')
-      .values({ ...insertableUser, ...user })
+      .values(userEntity)
       .returning(this.baseFields)
       .executeTakeFirst();
   }

@@ -18,6 +18,6 @@
 
 .disclaimer {
   position: absolute;
-  bottom: 100%;
+  bottom: calc(100% + 20px);
   text-align: center;
 }

@@ -30,15 +30,39 @@ export function resolveRelativeAttachmentPath(
   pageDir: string,
   attachmentCandidates: Map<string, string>,
 ): string | null {
-  const mainRel = decodeURIComponent(raw.replace(/^\.?\/+/, ''));
-  const fallback = path.normalize(path.join(pageDir, mainRel));
+  let mainRel = decodeURIComponent(raw.replace(/^\.?\/+/, ''));
+
+  mainRel = mainRel
+    .replace(/\\/g, '/')
+    .replace(/\/+/g, '/')
+    .replace(/^\/|\/$/g, '');
 
   if (attachmentCandidates.has(mainRel)) {
     return mainRel;
   }
-  if (attachmentCandidates.has(fallback)) {
-    return fallback;
+
+  if (pageDir) {
+    const fallback = `${pageDir}/${mainRel}`
+      .replace(/\\/g, '/')
+      .replace(/\/+/g, '/');
+
+    if (attachmentCandidates.has(fallback)) {
+      return fallback;
+    }
   }
+
+  const basename = mainRel.split('/').pop() || mainRel;
+  if (attachmentCandidates.has(basename)) {
+    return basename;
+  }
+
+  if (mainRel.startsWith('attachments/')) {
+    const withoutAttachments = mainRel.substring(12);
+    if (attachmentCandidates.has(withoutAttachments)) {
+      return withoutAttachments;
+    }
+  }
+
   return null;
 }
 

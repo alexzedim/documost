@@ -50,7 +50,6 @@ export class AuthService {
   constructor(
     private readonly httpService: HttpService,
     private environmentService: EnvironmentService,
-    private workspaceService: WorkspaceService,
     private signupService: SignupService,
     private tokenService: TokenService,
     private userRepo: UserRepo,
@@ -62,76 +61,71 @@ export class AuthService {
   ) {}
 
   async login(req: FastifyRequest, loginDto: LoginDto, workspaceId: string) {
-    // Generate unique device identifier based on request fingerprint
-    const deviceIdentifier = this.generateDeviceIdentifier(req);
+    try {
+      // Generate unique device identifier based on request fingerprint
+      const deviceIdentifier = this.generateDeviceIdentifier(req);
 
-    const { email, password } = loginDto;
+      const { email, password } = loginDto;
 
-    if (!email || !password) {
-      throw new BadRequestException('Email and password are required');
-    }
+      if (!email || !password) {
+        throw new BadRequestException('Email and password are required');
+      }
 
-    // Check if user is locked out due to too many failed attempts (using device fingerprint)
-    // await this.checkLoginLockout(deviceIdentifier);
+      // Check if user is locked out due to too many failed attempts (using device fingerprint)
+      await this.checkLoginLockout(deviceIdentifier);
 
-    // const isRoot = email === appConfig.rootLogin;
-    // if (isRoot) {
-    //  return await this.authAsRoot(email, password, deviceIdentifier, req);
-    // }
+      let user = await this.userRepo.findByEmail(email, workspaceId, {
+        includePassword: true,
+      });
 
-    await this.checkLoginLockout(deviceIdentifier);
+      if (!user && !user.password) {
+          const keycloakUser = await this.authKeycloakProvider(email, password);
 
-    const keycloakUser = await this.authKeycloakProvider(email, password);
-    if (!keycloakUser) {
-      throw new UnauthorizedException('Email not found');
-    }
+          if (!keycloakUser) {
+            throw new UnauthorizedException('Email not found');
+          }
 
-    let user = await this.userRepo.findByEmail(email, workspaceId, {
-      includePassword: true,
-    });
-
-    if (!user) {
-      await executeTx(
-        this.db,
-        async (trx) => {
-          // create user
-          user = await this.userRepo.insertUser(
-            {
+          if (!user) {
+            user = await this.userRepo.insertUser({
               name: keycloakUser.username,
+              description: keycloakUser.id,
               email: keycloakUser.email,
-              role: UserRole.ADMIN,
-              invitedById: keycloakUser.id,
               workspaceId: workspaceId,
-            },
-            trx,
-          );
+            });
+          }
+      }
 
-          // create workspace with full setup
-          const workspaceData: CreateWorkspaceDto = {
-            name: user.name || 'My workspace',
-            // hostname: createAdminUserDto.hostname,
-          };
+      if (user && user.password && user.password !== null) {
+        const isPasswordMatch = await comparePasswordHash(
+          loginDto.password,
+          user.password,
+        );
 
-          const workspace = await this.workspaceService.create(
-            user,
-            workspaceData,
-            trx,
-          );
-
-          user.workspaceId = workspace.id;
-          return user;
+        if (!isPasswordMatch) {
+          throw new UnauthorizedException('Email or password does not match');
         }
-      );
+      }
+
+      if (!user || user?.deletedAt) {
+        throw new UnauthorizedException('Email or password does not match');
+      }
+
+      user.lastLoginAt = new Date();
+      await this.userRepo.updateLastLogin(user.id, workspaceId);
+
+      return this.tokenService.generateAccessToken(user);
+    } catch (error) {
+      // Record failed attempt for authentication errors
+      if (error instanceof HttpException) {
+        const status = error.getStatus() as HttpStatus;
+
+        if (status === HttpStatus.UNAUTHORIZED || status === HttpStatus.NOT_FOUND) {
+          await this.recordFailedLoginAttempt(deviceIdentifier);
+        }
+      }
+
+      throw error;
     }
-
-    if (!user || user?.deletedAt) {
-      throw new UnauthorizedException('Email or password does not match');
-    }
-
-    user.lastLoginAt = new Date();
-    await this.userRepo.updateLastLogin(user.id, workspaceId);
-
-    return this.tokenService.generateAccessToken(user);
   }
 
   async register(createUserDto: CreateUserDto, workspaceId: string) {
@@ -351,10 +345,10 @@ export class AuthService {
       });
 
       const tokens: AuthResponse = tokenResponse.data;
-      console.log(tokens);
+
       // Optionally, decode token to get user info
       const keycloakUser = await this.getUserInfoFromToken(tokens.access_token);
-      console.log(keycloakUser);
+
       if (!keycloakUser) {
         throw new NotFoundException('Keycloak User does not exists!');
       }
@@ -368,7 +362,7 @@ export class AuthService {
 
       return keycloakUser;
     } catch (error) {
-      console.log({ logTag, message: 'check keycloak integration', error: error });
+      this.logger.log({ logTag, message: 'check keycloak integration', error: error });
 
       return undefined;
     }
@@ -407,7 +401,7 @@ export class AuthService {
           }
         : undefined;
     } catch (error) {
-      console.error({
+      this.logger.error({
         logTag,
         message: 'Error getting user info:',
         error: error,
@@ -429,7 +423,7 @@ export class AuthService {
 
     // Create fingerprint string with components
     const fingerprintString = `${ip}|${userAgent}|${acceptLanguage}|${acceptEncoding}`;
-    console.log(fingerprintString);
+
     const hash = crypto.createHash('sha256');
     hash.update(fingerprintString);
 
@@ -464,5 +458,64 @@ export class AuthService {
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
+  }
+
+  /**
+   * Record a failed login attempt
+   * @param identifier - User identifier (email, IP, or combination)
+   * @returns Remaining attempts before lockout
+   */
+  private async recordFailedLoginAttempt(identifier: string): Promise<number> {
+    const attemptsKey = this.getLoginAttemptsKey(identifier);
+    const lockoutKey = this.getLoginLockoutKey(identifier);
+
+    const redisClient = this.redisService.getOrThrow();
+
+    const timeoutSeconds = this.environmentService.getLoginTimeourSeconds();
+    const maxAttempts = this.environmentService.getKeycloakUrl();
+
+    // Increment attempt counter
+    const attempts = await redisClient.incr(attemptsKey);
+
+    // Set expiration on first attempt (attempts reset after timeout period)
+    if (attempts === 1) {
+      await redisClient.expire(attemptsKey, timeoutSeconds);
+    }
+
+    this.logger.debug(
+      `Failed login attempt ${attempts}/${maxAttempts} for ${identifier}`,
+    );
+
+    // Check if max attempts exceeded
+    if (attempts >= maxAttempts) {
+      // Lock out the user
+      await redisClient.set(
+        lockoutKey,
+        new Date().toISOString(),
+        'EX',
+        timeoutSeconds,
+      );
+
+      // Clean up attempts counter
+      await redisClient.del(attemptsKey);
+
+      this.logger.warn(
+        `User ${identifier} locked out after ${attempts} failed attempts. Timeout: ${timeoutSeconds}s`,
+      );
+
+      // Get localized error message
+      const message = 'Too many failed login attempts.';
+
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+          message,
+          retryAfter: timeoutSeconds,
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    return maxAttempts - attempts;
   }
 }

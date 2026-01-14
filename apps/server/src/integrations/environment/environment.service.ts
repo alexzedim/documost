@@ -297,4 +297,12 @@ export class EnvironmentService {
   getKaspeskySsl(): string {
     return this.configService.get<string>('KASPERSKY_CONTENT', '');
   }
+
+  getLoginMaxAttempts(): string {
+    return this.configService.get<number>('LOGIN_MAX_ATTEMPTS', 10);
+  }
+  
+  getLoginTimeourSeconds(): string {
+    return this.configService.get<number>('LOGIN_TIMEOUT_SECONDS', 60);
+  }
 }

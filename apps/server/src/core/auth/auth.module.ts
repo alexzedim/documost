@@ -8,6 +8,7 @@ import { WorkspaceModule } from '../workspace/workspace.module';
 import { SignupService } from './services/signup.service';
 import { TokenModule } from './token.module';
 import { MfaModule } from '../../ee/mfa/mfa.module.js';
+import { SpaceModule } from 'src/core/space/space.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { MfaModule } from '../../ee/mfa/mfa.module.js';
       httpsAgent: new Agent({ rejectUnauthorized: false }),
     }),
     TokenModule,
+    SpaceModule,
     WorkspaceModule,
     MfaModule
   ],

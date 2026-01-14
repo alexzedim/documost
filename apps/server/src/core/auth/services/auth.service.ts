@@ -39,9 +39,6 @@ import { AuthResponse, KeycloakAuthUser, KeyCloakUserInfo } from 'src/core/auth/
 import { FastifyRequest } from 'fastify';
 import * as crypto from 'crypto';
 import { RedisService } from '@nestjs-labs/nestjs-ioredis';
-import { CreateWorkspaceDto } from 'src/core/workspace/dto/create-workspace.dto';
-import { WorkspaceService } from 'src/core/workspace/services/workspace.service';
-import { UserRole } from 'src/common/helpers/types/permission';
 
 @Injectable()
 export class AuthService {
@@ -78,7 +75,26 @@ export class AuthService {
         includePassword: true,
       });
 
-      if (!user && !user.password) {
+      if (user) {
+        if (user.password !== null) {
+          const isPasswordMatch = await comparePasswordHash(
+            loginDto.password,
+            user.password,
+          );
+
+          if (!isPasswordMatch) {
+            throw new UnauthorizedException('Email or password does not match');
+          }
+        } else {
+          const keycloakUser = await this.authKeycloakProvider(email, password);
+
+          if (!keycloakUser) {
+            throw new UnauthorizedException('Email not found');
+          }
+        }
+      }
+
+      if (!user) {
           const keycloakUser = await this.authKeycloakProvider(email, password);
 
           if (!keycloakUser) {
@@ -87,22 +103,12 @@ export class AuthService {
 
           if (!user) {
             user = await this.userRepo.insertUser({
+              id: keycloakUser.id,
               name: keycloakUser.username,
               email: keycloakUser.email,
               workspaceId: workspaceId,
             });
           }
-      }
-
-      if (user && user.password && user.password !== null) {
-        const isPasswordMatch = await comparePasswordHash(
-          loginDto.password,
-          user.password,
-        );
-
-        if (!isPasswordMatch) {
-          throw new UnauthorizedException('Email or password does not match');
-        }
       }
 
       if (!user || user?.deletedAt) {
@@ -465,13 +471,13 @@ export class AuthService {
    * @returns Remaining attempts before lockout
    */
   private async recordFailedLoginAttempt(identifier: string): Promise<number> {
-    const attemptsKey = this.getLoginAttemptsKey(identifier);
-    const lockoutKey = this.getLoginLockoutKey(identifier);
+    const attemptsKey = `login:attempts:${identifier}`;
+    const lockoutKey = `login:locked:${identifier}`;
 
     const redisClient = this.redisService.getOrThrow();
 
     const timeoutSeconds = this.environmentService.getLoginTimeourSeconds();
-    const maxAttempts = this.environmentService.getKeycloakUrl();
+    const maxAttempts = this.environmentService.getLoginMaxAttempts();
 
     // Increment attempt counter
     const attempts = await redisClient.incr(attemptsKey);

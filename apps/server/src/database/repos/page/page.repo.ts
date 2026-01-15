@@ -455,36 +455,37 @@ export class PageRepo {
       .execute();
   }
 
+  async getLastModifiedSinceHeader(): Promise<Date | null> {
+    const result = await this.db
+      .selectFrom('pages')
+      .select((eb) => eb.fn.max('updatedAt').as('latestUpdate'))
+      .where('deletedAt', 'is', null)
+      .executeTakeFirst();
+
+    return result?.latestUpdate || null;
+  }
+
   /**
-   * Retrieves all page IDs with optional pagination (skip and limit).
+   * Retrieves pages by their IDs.
    * Soft-deleted pages are excluded.
    *
-   * @param pagination - Pagination options with optional skip and limit.
-   * @param pagination.skip - Number of records to skip (offset).
-   * @param pagination.limit - Maximum number of records to return.
+   * @param pageIds - Array of page IDs to retrieve.
    * @param workspaceId - Optional workspace ID to filter pages by workspace.
-   * @returns Promise<Array<Pick<Page, 'id'>>>
+   * @returns Promise<Array<Page>>
    */
-  async getAllPageIds(pagination: PaginationOptions, workspaceId?: string) {
+  async getPagesByIds(pageIds: string[], workspaceId?: string) {
     let query = this.db
       .selectFrom('pages')
       .select(this.baseFields)
-      .where('deletedAt', 'is', null);
+      .where('deletedAt', 'is', null)
+      .where('id', 'in', pageIds);
 
     if (workspaceId) {
       query = query.where('workspaceId', '=', workspaceId);
     }
 
-    query = query.orderBy('createdAt', 'desc'); // Ensures consistent pagination
+    query = query.orderBy('createdAt', 'desc');
 
-    const petPage = pagination.limit === 20 ? 250_000 : pagination.limit;
-
-    const result = executeWithPagination(query, {
-      page: pagination.page,
-      perPage: petPage,
-      hasEmptyIds: false,
-    });
-
-    return await result;
+    return await query.execute();
   }
 }

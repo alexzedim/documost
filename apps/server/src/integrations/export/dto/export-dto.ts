@@ -1,9 +1,12 @@
 import {
+  ArrayNotEmpty,
+  IsArray,
   IsBoolean,
   IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
 } from 'class-validator';
 
 export enum ExportFormat {
@@ -41,4 +44,11 @@ export class ExportSpaceDto {
   @IsOptional()
   @IsBoolean()
   includeAttachments?: boolean;
+}
+
+export class WorkspacePagesDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsUUID('4', { each: true })
+  pageIds: string[];
 }

@@ -3,6 +3,7 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   NotFoundException,
@@ -11,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ExportService } from './export.service';
-import { ExportPageDto, ExportSpaceDto } from './dto/export-dto';
+import { ExportPageDto, ExportSpaceDto, WorkspacePagesDto } from './dto/export-dto';
 import { AuthUser } from '../../common/decorators/auth-user.decorator';
 import { User } from '@docmost/db/types/entity.types';
 import SpaceAbilityFactory from '../../core/casl/abilities/space-ability.factory';
@@ -74,13 +75,25 @@ export class ExportController {
 
   // @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  @Get('pages/export')
+  @Post('spaces/pages/export')
   async getPages(
-    @Body() dto: { workspaceId?: string; pagination?: PaginationOptions },
-    // @AuthUser() user: User,
+    @Body() dto: WorkspacePagesDto,
+    @Headers('if-modified-since') ifModifiedSinceHeader?: string,
+    @Res() res?: FastifyReply,
   ) {
-    const pagination = dto.pagination || new PaginationOptions();
-    const pages = await this.pageRepo.getAllPageIds(pagination, dto.workspaceId);
+    const latestModified = await this.pageRepo.getLastModifiedSinceHeader();
+
+    // Check If-Modified-Since header with latestModified, if no updates, return 304
+    if (ifModifiedSinceHeader && latestModified) {
+      const clientDate = new Date(ifModifiedSinceHeader);
+      if (latestModified <= clientDate) {
+        res.statusCode = HttpStatus.NOT_MODIFIED;
+        res.send();
+        return;
+      }
+    }
+
+    const pages = await this.pageRepo.getPagesByIds(dto.pageIds);
 
     return {
       pages: pages,

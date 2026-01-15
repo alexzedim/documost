@@ -10,7 +10,7 @@ WORKDIR /opt/app-root/app
 
 COPY . .
 
-RUN npm install -g pnpm@10.4.0
+RUN npm install -g pnpm@10.27.0
 RUN pnpm install --frozen-lockfile
 RUN pnpm build
 
@@ -34,7 +34,7 @@ COPY --from=builder /opt/app-root/app/pnpm*.yaml /opt/app-root/app/
 # Copy patches
 COPY --from=builder /opt/app-root/app/patches /opt/app-root/app/patches
 
-RUN npm install -g pnpm@10.4.0
+RUN npm install -g pnpm@10.27.0
 
 RUN chown -R 1001:1001 /opt/app-root/app
 

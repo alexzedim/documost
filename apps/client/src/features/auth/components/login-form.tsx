@@ -69,7 +69,7 @@ export function LoginForm() {
         Размещение персональных данных, коммерческой тайны и прочей
         чувствительной информации
         <br />
-        <span style={{ color: "red" }}>ЗАПРЕЩЕНО</span>!
+        <span style={{ color: "red", fontWeight: "bold" }}>ЗАПРЕЩЕНО</span>!
       </div>
       <Box p="xl" className={classes.containerBox}>
         <Title order={2} ta="center" fw={500} mb="md">

@@ -484,4 +484,49 @@ export class PageRepo {
 
     return await query.execute();
   }
+
+  async getPagesForTree(opts: {
+    workspaceId: string;
+    spaceId?: string;
+    creatorId?: string;
+    pageIds?: string[];
+  }) {
+    if (opts.pageIds && opts.pageIds.length === 0) {
+      return [];
+    }
+
+    let query = this.db
+      .selectFrom('pages')
+      .select([
+        'id',
+        'slugId',
+        'title',
+        'position',
+        'parentPageId',
+        'spaceId',
+        'creatorId',
+        'createdAt',
+        'updatedAt',
+      ])
+      .where('workspaceId', '=', opts.workspaceId)
+      .where('deletedAt', 'is', null);
+
+    if (opts.spaceId) {
+      query = query.where('spaceId', '=', opts.spaceId);
+    }
+
+    if (opts.creatorId) {
+      query = query.where('creatorId', '=', opts.creatorId);
+    }
+
+    if (opts.pageIds) {
+      query = query.where('id', 'in', opts.pageIds);
+    }
+
+    query = query
+      .orderBy('position', (ob) => ob.collate('C').asc())
+      .orderBy('createdAt', 'asc');
+
+    return await query.execute();
+  }
 }

@@ -18,6 +18,7 @@ import {
   PageHistoryIdDto,
   PageIdDto,
   PageInfoDto,
+  GetPagesTreeDto,
 } from './dto/page.dto';
 import { PageHistoryService } from './services/page-history.service';
 import { AuthUser } from '../../common/decorators/auth-user.decorator';
@@ -388,5 +389,14 @@ export class PageController {
       throw new ForbiddenException();
     }
     return this.pageService.getPageBreadCrumbs(page.id);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('pages/tree')
+  async getPagesTree(
+    @Body() dto: GetPagesTreeDto,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
+    return this.pageService.getPagesTree(dto, workspace.id);
   }
 }

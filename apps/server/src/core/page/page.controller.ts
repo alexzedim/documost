@@ -377,7 +377,7 @@ export class PageController {
   }
 
   @HttpCode(HttpStatus.OK)
-  @Post('/breadcrumbs')
+  @Post('breadcrumbs')
   async getPageBreadcrumbs(@Body() dto: PageIdDto, @AuthUser() user: User) {
     const page = await this.pageRepo.findById(dto.pageId);
     if (!page) {
@@ -392,11 +392,11 @@ export class PageController {
   }
 
   @HttpCode(HttpStatus.OK)
-  @Post('pages/tree')
+  @Post('tree')
   async getPagesTree(
     @Body() dto: GetPagesTreeDto,
-    @AuthWorkspace() workspace: Workspace,
+    // @AuthWorkspace() workspace: Workspace,
   ) {
-    return this.pageService.getPagesTree(dto, workspace.id);
+    return this.pageService.getPagesTree(dto);
   }
 }

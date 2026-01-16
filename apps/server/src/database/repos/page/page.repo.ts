@@ -473,16 +473,12 @@ export class PageRepo {
    * @param workspaceId - Optional workspace ID to filter pages by workspace.
    * @returns Promise<Array<Page>>
    */
-  async getPagesByIds(pageIds: string[], workspaceId?: string) {
+  async getPagesByIds(pageIds: string[]) {
     let query = this.db
       .selectFrom('pages')
       .select(this.baseFields)
       .where('deletedAt', 'is', null)
       .where('id', 'in', pageIds);
-
-    if (workspaceId) {
-      query = query.where('workspaceId', '=', workspaceId);
-    }
 
     query = query.orderBy('createdAt', 'desc');
 

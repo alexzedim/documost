@@ -46,7 +46,7 @@ export class ExportSpaceDto {
   includeAttachments?: boolean;
 }
 
-export class WorkspacePagesDto {
+export class PagesDto {
   @IsArray()
   @ArrayNotEmpty()
   @IsUUID('4', { each: true })

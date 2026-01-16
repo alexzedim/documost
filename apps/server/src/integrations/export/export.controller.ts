@@ -12,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ExportService } from './export.service';
-import { ExportPageDto, ExportSpaceDto, WorkspacePagesDto } from './dto/export-dto';
+import { ExportPageDto, ExportSpaceDto, PagesDto } from './dto/export-dto';
 import { AuthUser } from '../../common/decorators/auth-user.decorator';
 import { User } from '@docmost/db/types/entity.types';
 import SpaceAbilityFactory from '../../core/casl/abilities/space-ability.factory';
@@ -77,7 +77,7 @@ export class ExportController {
   @HttpCode(HttpStatus.OK)
   @Post('spaces/pages/export')
   async getPages(
-    @Body() dto: WorkspacePagesDto,
+    @Body() dto: PagesDto,
     @Headers('if-modified-since') ifModifiedSinceHeader?: string,
     @Res() res?: FastifyReply,
   ) {

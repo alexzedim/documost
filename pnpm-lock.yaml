@@ -24,7 +24,6 @@ overrides:
   tmp: 0.2.4
   undici: 7.5.0
   ws: 8.17.1
-  urllib3: 2.6.3
 
 patchedDependencies:
   react-arborist@3.4.0:

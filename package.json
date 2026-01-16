@@ -116,8 +116,7 @@
       "semver": "7.5.2",
       "tmp": "0.2.4",
       "undici": "7.5.0",
-      "ws": "8.17.1",
-      "urllib3": "2.6.3"
+      "ws": "8.17.1"
     },
     "neverBuiltDependencies": []
   }

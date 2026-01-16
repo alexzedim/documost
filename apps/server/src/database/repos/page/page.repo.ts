@@ -486,7 +486,7 @@ export class PageRepo {
   }
 
   async getPagesForTree(opts: {
-    workspaceId: string;
+    workspaceId?: string;
     spaceId?: string;
     creatorId?: string;
     pageIds?: string[];
@@ -508,8 +508,11 @@ export class PageRepo {
         'createdAt',
         'updatedAt',
       ])
-      .where('workspaceId', '=', opts.workspaceId)
       .where('deletedAt', 'is', null);
+
+    if (opts.workspaceId) {
+      query = query.where('workspaceId', '=', opts.workspaceId);
+    }
 
     if (opts.spaceId) {
       query = query.where('spaceId', '=', opts.spaceId);

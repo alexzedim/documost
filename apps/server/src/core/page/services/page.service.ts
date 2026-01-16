@@ -646,7 +646,7 @@ export class PageService {
 
   async getPagesTree(
     dto: GetPagesTreeDto,
-    workspaceId: string,
+    workspaceId?: string,
   ): Promise<WikiPageType[]> {
     const pages = await this.pageRepo.getPagesForTree({
       workspaceId,

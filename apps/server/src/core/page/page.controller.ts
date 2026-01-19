@@ -397,6 +397,6 @@ export class PageController {
     @Body() dto: GetPagesTreeDto,
     @AuthWorkspace() workspace: Workspace,
   ) {
-    return this.pageService.getPagesTree(dto, workspace);
+    return this.pageService.getPagesTree(dto, workspace.id);
   }
 }

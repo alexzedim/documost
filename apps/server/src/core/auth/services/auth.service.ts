@@ -111,9 +111,21 @@ export class AuthService {
               workspaceId: workspaceId,
             });
 
+            // @todo to separate function
+            const atSign = '@';
+
+            let username = user.name;
+            const isEmail = username.includes(atSign);
+            
+            if (isEmail) {
+              let [username] = username.split(atSign);
+            }
+
+            const namespace = isEmail ? `Пространство для ${username}` : 'Личное пространство'
+
             await this.spaceService.createSpace(user, workspaceId, {
-              name: `${user.name}'s space`,
-              description: 'Your personal space',
+              name: namespace,
+              description: 'Ваши личное пространство',
               slug: `${user.name}-${user.email}`.replace(' ', '-').toLowerCase(),
             });
           }

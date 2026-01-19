@@ -36,8 +36,6 @@ import { PageRepo } from '@docmost/db/repos/page/page.repo';
 import { RecentPageDto } from './dto/recent-page.dto';
 import { DuplicatePageDto } from './dto/duplicate-page.dto';
 import { DeletedPageDto } from './dto/deleted-page.dto';
-import { SpaceMemberService } from '../space/services/space-member.service';
-import { SpaceMemberRepo } from '@docmost/db/repos/space/space-member.repo';
 
 @UseGuards(JwtAuthGuard)
 @Controller('pages')
@@ -394,7 +392,7 @@ export class PageController {
   }
 
   @HttpCode(HttpStatus.OK)
-  @Post('pages/tree')
+  @Post('tree')
   async getPagesTree(@AuthUser() user: User) {
     const spaceIds = await this.pageService.getUserSpaceIds(user.id);
 

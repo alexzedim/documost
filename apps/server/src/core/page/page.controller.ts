@@ -50,7 +50,7 @@ export class PageController {
   ) {}
 
   @HttpCode(HttpStatus.OK)
-  @Post('/info')
+  @Post('info')
   async getPage(@Body() dto: PageInfoDto, @AuthUser() user: User) {
     const page = await this.pageRepo.findById(dto.pageId, {
       includeSpace: true,
@@ -379,7 +379,7 @@ export class PageController {
   }
 
   @HttpCode(HttpStatus.OK)
-  @Post('/breadcrumbs')
+  @Post('breadcrumbs')
   async getPageBreadcrumbs(@Body() dto: PageIdDto, @AuthUser() user: User) {
     const page = await this.pageRepo.findById(dto.pageId);
     if (!page) {
@@ -394,7 +394,7 @@ export class PageController {
   }
 
   @HttpCode(HttpStatus.OK)
-  @Post('pages/tree')
+  @Post('tree')
   async getPagesTree(@AuthUser() user: User) {
     const spaceIds = await this.pageService.getUserSpaceIds(user.id);
 
@@ -407,13 +407,10 @@ export class PageController {
       }
 
       const pageIdsFromSpace = await this.pageService.getUserAccessiblePageIds(spaceId);
-
       const pageIdsForEachSpace = pageIdsFromSpace.map((pageId) => pageId.id);
 
       pageIds.push(...pageIdsForEachSpace);
     }
-
-
 
     return this.pageService.getPagesTree(pageIds);
   }

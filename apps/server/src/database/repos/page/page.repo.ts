@@ -486,9 +486,9 @@ export class PageRepo {
   }
 
   async getPagesForTree(opts: {
-    pageIds?: string[];
+    pageIds: string[];
   }) {
-    if (opts.pageIds && opts.pageIds.length === 0) {
+    if (opts.pageIds.length === 0) {
       return [];
     }
 

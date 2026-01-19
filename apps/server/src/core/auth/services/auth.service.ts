@@ -17,6 +17,7 @@ import { CreateAdminUserDto } from '../dto/create-admin-user.dto';
 import { UserRepo } from '@docmost/db/repos/user/user.repo';
 import {
   comparePasswordHash,
+  generateSlugId,
   hashPassword,
   nanoIdGen,
 } from '../../../common/helpers';
@@ -111,10 +112,23 @@ export class AuthService {
               workspaceId: workspaceId,
             });
 
+            // @todo to separate function
+            const atSign = '@';
+
+            let username = user.name;
+            let spacename = 'Личное пространство';
+
+            const isEmail = username.includes(atSign);
+            
+            if (isEmail) {
+              [username] = username.split(atSign);
+              spacename = `Пространство для ${username}`;
+            }
+
             await this.spaceService.createSpace(user, workspaceId, {
-              name: `${user.name}'s space`,
-              description: 'Your personal space',
-              slug: `${user.name}-${user.email}`.replace(' ', '-').toLowerCase(),
+              name: spacename,
+              description: 'Ваши личное пространство',
+              slug: generateSlugId(),
             });
           }
       }

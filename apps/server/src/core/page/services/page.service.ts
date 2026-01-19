@@ -706,7 +706,10 @@ export class PageService {
       const parentId = page.parentPageId;
       const parentPath =
         parentId && pageMap.has(parentId) ? buildPath(parentId) : '';
-      const path = `${parentPath}/${page.slugId}`;
+
+      const isBackslash = parentPath === '' ? '' : '/'
+
+      const path = `${parentPath}${isBackslash}${page.slugId}`;
       pathCache.set(pageId, path);
       return path;
     };
@@ -741,6 +744,8 @@ export class PageService {
           (page) => !page.parentPageId || !pageMap.has(page.parentPageId ?? ''),
         );
 
-    return rootPages.map((page) => buildNode(page, 0));
+    const tree = rootPages.map((page) => buildNode(page, 0))
+
+    return tree;
   }
 }

@@ -1,19 +1,11 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException, } from '@nestjs/common';
 import { CreatePageDto } from '../dto/create-page.dto';
 import { UpdatePageDto } from '../dto/update-page.dto';
 import { GetPagesTreeDto, WikiPageType } from '../dto/page.dto';
 import { PageRepo } from '@docmost/db/repos/page/page.repo';
 import { InsertablePage, Page, User } from '@docmost/db/types/entity.types';
 import { PaginationOptions } from '@docmost/db/pagination/pagination-options';
-import {
-  executeWithPagination,
-  PaginationResult,
-} from '@docmost/db/pagination/pagination';
+import { executeWithPagination, PaginationResult, } from '@docmost/db/pagination/pagination';
 import { InjectKysely } from 'nestjs-kysely';
 import { KyselyDB } from '@docmost/db/types/kysely.types';
 import { generateJitteredKeyBetween } from 'fractional-indexing-jittered';
@@ -30,10 +22,7 @@ import {
   removeMarkTypeFromDoc,
 } from '../../../common/helpers/prosemirror/utils';
 import { jsonToNode, jsonToText } from 'src/collaboration/collaboration.util';
-import {
-  CopyPageMapEntry,
-  ICopyPageAttachment,
-} from '../dto/duplicate-page.dto';
+import { CopyPageMapEntry, ICopyPageAttachment, } from '../dto/duplicate-page.dto';
 import { Node as PMNode } from '@tiptap/pm/model';
 import { StorageService } from '../../../integrations/storage/storage.service';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -41,6 +30,9 @@ import { Queue } from 'bullmq';
 import { QueueJob, QueueName } from '../../../integrations/queue/constants';
 import { EventName } from '../../../common/events/event.contants';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { SpaceMemberRepo } from '@docmost/db/repos/space/space-member.repo';
+import { SpaceCaslAction, SpaceCaslSubject, } from '../../casl/interfaces/space-ability.type';
+import SpaceAbilityFactory from '../../casl/abilities/space-ability.factory';
 
 @Injectable()
 export class PageService {
@@ -49,6 +41,8 @@ export class PageService {
   constructor(
     private pageRepo: PageRepo,
     private attachmentRepo: AttachmentRepo,
+    private spaceMemberRepo: SpaceMemberRepo,
+    private readonly spaceAbility: SpaceAbilityFactory,
     @InjectKysely() private readonly db: KyselyDB,
     private readonly storageService: StorageService,
     @InjectQueue(QueueName.ATTACHMENT_QUEUE) private attachmentQueue: Queue,
@@ -214,6 +208,17 @@ export class PageService {
     return result;
   }
 
+  async getUserAccessiblePageIds(spaceId: string): Promise<{ id: string; position: string }[]> {
+    return await this.db
+      .selectFrom('pages')
+      .select(['id', 'position', 'deletedAt', 'spaceId'])
+      .orderBy('position', (ob) => ob.collate('C').asc())
+      .where('deletedAt', 'is', null)
+      .where('spaceId', '=', spaceId)
+      .limit(10_000)
+      .execute();
+  }
+
   async movePageToSpace(rootPage: Page, spaceId: string) {
     await executeTx(this.db, async (trx) => {
       // Update root page
@@ -260,7 +265,7 @@ export class PageService {
 
         await this.aiQueue.add(QueueJob.PAGE_MOVED_TO_SPACE, {
           pageId: pageIds,
-          workspaceId: rootPage.workspaceId
+          workspaceId: rootPage.workspaceId,
         });
       }
     });
@@ -388,9 +393,14 @@ export class PageService {
           workspaceId: page.workspaceId,
           creatorId: authUser.id,
           lastUpdatedById: authUser.id,
-          parentPageId: page.id === rootPage.id
-            ? (isDuplicateInSameSpace ? rootPage.parentPageId : null)
-            : (page.parentPageId ? pageMap.get(page.parentPageId)?.newPageId : null),
+          parentPageId:
+            page.id === rootPage.id
+              ? isDuplicateInSameSpace
+                ? rootPage.parentPageId
+                : null
+              : page.parentPageId
+                ? pageMap.get(page.parentPageId)?.newPageId
+                : null,
         };
       }),
     );
@@ -644,15 +654,15 @@ export class PageService {
     await this.pageRepo.removePage(pageId, userId, workspaceId);
   }
 
+  async getUserSpaceIds(userId: string): Promise<string[]> {
+    return await this.spaceMemberRepo.getUserSpaceIds(userId);
+  }
+
   async getPagesTree(
-    dto: GetPagesTreeDto,
-    workspaceId?: string,
+    pageIds: string[]
   ): Promise<WikiPageType[]> {
     const pages = await this.pageRepo.getPagesForTree({
-      workspaceId,
-      spaceId: dto.spaceId,
-      creatorId: dto.userId,
-      pageIds: dto.pageIds,
+      pageIds,
     });
 
     if (pages.length === 0) {
@@ -723,13 +733,12 @@ export class PageService {
       return node;
     };
 
-    const rootPages = dto.pageIds?.length
-      ? dto.pageIds
+    const rootPages = pageIds?.length
+      ? pageIds
           .map((pageId) => pageMap.get(pageId))
           .filter((page): page is (typeof pages)[number] => Boolean(page))
       : pages.filter(
-          (page) =>
-            !page.parentPageId || !pageMap.has(page.parentPageId ?? ''),
+          (page) => !page.parentPageId || !pageMap.has(page.parentPageId ?? ''),
         );
 
     return rootPages.map((page) => buildNode(page, 0));

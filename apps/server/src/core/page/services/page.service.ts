@@ -650,8 +650,8 @@ export class PageService {
   ): Promise<WikiPageType[]> {
     const pages = await this.pageRepo.getPagesForTree({
       workspaceId,
-      spaceId: dto.spaceId,
-      creatorId: dto.userId,
+        spaceId: dto.spaceId,
+        creatorId: dto.userId,
       pageIds: dto.pageIds,
     });
 

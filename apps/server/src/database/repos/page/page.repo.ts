@@ -455,12 +455,17 @@ export class PageRepo {
       .execute();
   }
 
-  async getLastModifiedSinceHeader(): Promise<Date | null> {
-    const result = await this.db
-      .selectFrom('pages')
-      .select((eb) => eb.fn.max('updatedAt').as('latestUpdate'))
-      .where('deletedAt', 'is', null)
-      .executeTakeFirst();
+  async getLastModifiedSinceHeader(pageIds?: string[]): Promise<Date | null> {
+    let query = this.db
+        .selectFrom('pages')
+        .select((eb) => eb.fn.max('updatedAt').as('latestUpdate'))
+        .where('deletedAt', 'is', null)
+
+    if (!pageIds || pageIds && pageIds.length > 0) {
+      query = query.where('id', 'in', pageIds);
+    }
+
+    const result = await query.executeTakeFirst();
 
     return result?.latestUpdate || null;
   }

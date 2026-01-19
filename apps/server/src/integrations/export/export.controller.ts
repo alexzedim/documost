@@ -2,8 +2,6 @@ import {
   Body,
   Controller,
   ForbiddenException,
-  Get,
-  Headers,
   HttpCode,
   HttpStatus,
   NotFoundException,
@@ -24,7 +22,6 @@ import {
 } from '../../core/casl/interfaces/space-ability.type';
 import { FastifyReply } from 'fastify';
 import { sanitize } from 'sanitize-filename-ts';
-import { PaginationOptions } from '@docmost/db/pagination/pagination-options';
 
 @Controller()
 export class ExportController {
@@ -71,33 +68,6 @@ export class ExportController {
     });
 
     res.send(zipFileBuffer);
-  }
-
-  // @UseGuards(JwtAuthGuard)
-  @HttpCode(HttpStatus.OK)
-  @Post('spaces/pages/export')
-  async getPages(
-    @Body() dto: PagesDto,
-    @Headers('if-modified-since') ifModifiedSinceHeader?: string,
-    @Res() res?: FastifyReply,
-  ) {
-    const latestModified = await this.pageRepo.getLastModifiedSinceHeader();
-
-    // Check If-Modified-Since header with latestModified, if no updates, return 304
-    if (ifModifiedSinceHeader && latestModified) {
-      const clientDate = new Date(ifModifiedSinceHeader);
-      if (latestModified <= clientDate) {
-        res.statusCode = HttpStatus.NOT_MODIFIED;
-        res.send();
-        return;
-      }
-    }
-
-    const pages = await this.pageRepo.getPagesByIds(dto.pageIds);
-
-    return {
-      pages: pages,
-    };
   }
 
   @UseGuards(JwtAuthGuard)

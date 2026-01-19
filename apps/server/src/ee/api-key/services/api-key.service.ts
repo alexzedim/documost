@@ -7,29 +7,52 @@ import * as crypto from 'crypto';
 import { JwtApiKeyPayload } from '../../../core/auth/dto/jwt-payload';
 import { WorkspaceRepo } from '@docmost/db/repos/workspace/workspace.repo';
 import { UserRepo } from '@docmost/db/repos/user/user.repo';
+import { EnvironmentService } from '../../../integrations/environment/environment.service';
+import { CreateApiKeyDto } from '@docmost/ee/api-key/dto';
 
 @Injectable()
 export class ApiKeyService {
   constructor(
     @InjectKysely() private readonly db: KyselyDB,
+    private readonly environmentService: EnvironmentService,
     private readonly jwtService: JwtService,
     private readonly workspaceRepo: WorkspaceRepo,
     private readonly userRepo: UserRepo,
   ) {}
 
   async createApiKey(
-    data: any,
+    data: CreateApiKeyDto,
     userId: string,
     workspaceId: string,
   ): Promise<any> {
-    const token = this.generateApiKeyToken();
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    const iat = Math.floor(Date.now() / 1000);
+
+    const payload: { workspaceId: string; userId: string; iat: number } = {
+      workspaceId,
+      userId,
+      iat: iat,
+    };
+
+    const now = new Date();
+    const expiresAt = new Date(data.expiresAt);
+
+    const toSeconds = expiresAt.getTime() - now.getTime() / 1000;
+    const secondsBeforeExpire = `${toSeconds}s`;
+
+    const appSecret = this.environmentService.getAppSecret();
+
+    const token: string = this.jwtService.sign(payload, {
+      secret: appSecret,
+      algorithm: 'HS256',
+      expiresIn: data.expiresAt ? secondsBeforeExpire : undefined,
+      issuer: 'Docmost',
+    });
 
     const userToken = await this.db
       .insertInto('userTokens')
       .values({
         id: crypto.randomUUID(),
-        token: hashedToken,
+        token: token,
         type: 'api_key',
         userId: userId,
         workspaceId: workspaceId,

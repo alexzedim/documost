@@ -17,9 +17,11 @@ import { CreateAdminUserDto } from '../dto/create-admin-user.dto';
 import { UserRepo } from '@docmost/db/repos/user/user.repo';
 import {
   comparePasswordHash,
+  extractBearerTokenFromHeader,
   generateSlugId,
   hashPassword,
   nanoIdGen,
+  extractUsernameAndSpaceName,
 } from '../../../common/helpers';
 import { ChangePasswordDto } from '../dto/change-password.dto';
 import { MailService } from '../../../integrations/mail/mail.service';
@@ -112,21 +114,10 @@ export class AuthService {
               workspaceId: workspaceId,
             });
 
-            // @todo to separate function
-            const atSign = '@';
-
-            let username = user.name;
-            let spacename = 'Личное пространство';
-
-            const isEmail = username.includes(atSign);
-            
-            if (isEmail) {
-              [username] = username.split(atSign);
-              spacename = `Пространство для ${username}`;
-            }
+            const { username, namespace } = extractUsernameAndSpaceName(user.name);
 
             await this.spaceService.createSpace(user, workspaceId, {
-              name: spacename,
+              name: namespace,
               description: 'Ваши личное пространство',
               slug: generateSlugId(),
             });
@@ -400,7 +391,7 @@ export class AuthService {
    */
   private async getUserInfoFromToken(accessToken: string): Promise<KeycloakAuthUser | undefined> {
     const logTag = this.getUserInfoFromToken.name;
-    
+
     const keycloak = this.environmentService.getKeycloakUrl();
     const realm = this.environmentService.getKeycloakRealm();
 

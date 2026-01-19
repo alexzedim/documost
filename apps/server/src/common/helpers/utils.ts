@@ -86,7 +86,15 @@ export function removeAccent(str: string): string {
 export function extractBearerTokenFromHeader(
   request: FastifyRequest,
 ): string | undefined {
-  const [type, token] = request.headers.authorization?.split(' ') ?? [];
+  const authorizationHeader =
+    request.headers.authorization || request.headers['Authorization'] as string;
+
+  const isString = typeof authorizationHeader === 'string';
+  if (!authorizationHeader || !isString) {
+    return undefined;
+  }
+
+  const [type, token] = authorizationHeader.split(' ') ?? [];
   return type === 'Bearer' ? token : undefined;
 }
 
@@ -97,4 +105,22 @@ export function hasLicenseOrEE(opts: {
 }): boolean {
   const { licenseKey, plan, isCloud } = opts;
   return Boolean(licenseKey) || (isCloud && plan === 'business');
+}
+
+export function extractUsernameAndSpaceName(userName: string): {
+  username: string;
+  namespace: string;
+} {
+  const atSign = '@';
+  let username = userName;
+  let namespace = 'Личное пространство';
+
+  const isEmail = username.includes(atSign);
+
+  if (isEmail) {
+    [username] = username.split(atSign);
+    namespace = `Пространство для ${username}`;
+  }
+
+  return { username, namespace };
 }

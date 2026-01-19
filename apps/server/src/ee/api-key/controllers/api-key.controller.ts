@@ -1,4 +1,3 @@
-// /ee/api-key/api-key.controller.ts
 import {
   Controller,
   Post,
@@ -12,6 +11,7 @@ import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { AuthUser } from '../../../common/decorators/auth-user.decorator';
 import { AuthWorkspace } from '../../../common/decorators/auth-workspace.decorator';
 import { User, Workspace } from '@docmost/db/types/entity.types';
+import { CreateApiKeyDto } from '@docmost/ee/api-key/dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('api-keys')
@@ -32,7 +32,7 @@ export class ApiKeyController {
   async createApiKey(
     @AuthUser() user: User,
     @AuthWorkspace() workspace: Workspace,
-    @Body() data: any,
+    @Body() data: CreateApiKeyDto,
   ) {
     return this.apiKeyService.createApiKey(data, user.id, workspace.id);
   }

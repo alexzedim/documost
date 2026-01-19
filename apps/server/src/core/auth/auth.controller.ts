@@ -22,7 +22,6 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 import { VerifyUserTokenDto } from './dto/verify-user-token.dto';
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { ModuleRef } from '@nestjs/core';
 
 // import { ChangePasswordDto } from './dto/change-password.dto';
 // import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -36,7 +35,6 @@ export class AuthController {
   constructor(
     private authService: AuthService,
     private environmentService: EnvironmentService,
-    private moduleRef: ModuleRef,
   ) {}
 
   @HttpCode(HttpStatus.OK)
@@ -47,7 +45,11 @@ export class AuthController {
     @Res({ passthrough: true }) res: FastifyReply,
     @Body() loginInput: LoginDto,
   ) {
-    const authToken = await this.authService.login(req, loginInput, workspace.id);
+    const authToken = await this.authService.login(
+      req,
+      loginInput,
+      workspace.id,
+    );
     this.setAuthCookie(res, authToken);
   }
 

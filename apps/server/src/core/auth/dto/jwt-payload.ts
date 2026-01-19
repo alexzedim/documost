@@ -6,6 +6,7 @@ export enum JwtType {
   MFA_TOKEN = 'mfa_token',
   API_KEY = 'api_key',
 }
+
 export type JwtPayload = {
   sub: string;
   email: string;

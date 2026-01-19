@@ -735,6 +735,8 @@ export class PageService {
             !page.parentPageId || !pageMap.has(page.parentPageId ?? ''),
         );
 
-    return rootPages.map((page) => buildNode(page, 0));
+    const tree = rootPages.map((page) => buildNode(page, 0))
+
+    return tree;
   }
 }

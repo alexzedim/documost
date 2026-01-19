@@ -46,7 +46,6 @@ export class GetPagesTreeDto {
 
   @IsOptional()
   @IsArray()
-  @IsUUID('all', { each: true })
   pageIds?: string[];
 
   @IsOptional()

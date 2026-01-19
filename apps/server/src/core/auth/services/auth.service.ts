@@ -116,17 +116,17 @@ export class AuthService {
             const atSign = '@';
 
             let username = user.name;
-            let namespace = 'Личное пространство';
+            let spacename = 'Личное пространство';
 
             const isEmail = username.includes(atSign);
             
             if (isEmail) {
               [username] = username.split(atSign);
-              namespace = `Пространство для ${username}`;
+              spacename = `Пространство для ${username}`;
             }
 
             await this.spaceService.createSpace(user, workspaceId, {
-              name: namespace,
+              name: spacename,
               description: 'Ваши личное пространство',
               slug: generateSlugId(),
             });

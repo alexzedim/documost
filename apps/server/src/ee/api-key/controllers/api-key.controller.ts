@@ -34,7 +34,7 @@ export class ApiKeyController {
     @AuthWorkspace() workspace: Workspace,
     @Body() data: CreateApiKeyDto,
   ) {
-    return this.apiKeyService.createApiKey(data, user.id, workspace.id);
+    return this.apiKeyService.createApiKey(data, user, workspace.id);
   }
 
   @HttpCode(HttpStatus.OK)

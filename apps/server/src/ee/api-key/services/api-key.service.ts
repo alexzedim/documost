@@ -4,11 +4,12 @@ import { InjectKysely } from 'nestjs-kysely';
 import { KyselyDB } from '@docmost/db/types/kysely.types';
 import { JwtService } from '@nestjs/jwt';
 import * as crypto from 'crypto';
-import { JwtApiKeyPayload } from '../../../core/auth/dto/jwt-payload';
+import { JwtApiKeyPayload, JwtType } from '../../../core/auth/dto/jwt-payload';
 import { WorkspaceRepo } from '@docmost/db/repos/workspace/workspace.repo';
 import { UserRepo } from '@docmost/db/repos/user/user.repo';
 import { EnvironmentService } from '../../../integrations/environment/environment.service';
 import { CreateApiKeyDto } from '@docmost/ee/api-key/dto';
+import { User } from '@docmost/db/types/entity.types';
 
 @Injectable()
 export class ApiKeyService {
@@ -22,15 +23,16 @@ export class ApiKeyService {
 
   async createApiKey(
     data: CreateApiKeyDto,
-    userId: string,
+    user: User,
     workspaceId: string,
   ): Promise<any> {
-    const iat = Math.floor(Date.now() / 1000);
+    const userId = user.id;
 
-    const payload: { workspaceId: string; userId: string; iat: number } = {
+    const payload = {
+      sub: userId,
+      email: user.email,
       workspaceId,
-      userId,
-      iat: iat,
+      type: JwtType.ACCESS,
     };
 
     const now = new Date();
@@ -43,7 +45,6 @@ export class ApiKeyService {
 
     const token: string = this.jwtService.sign(payload, {
       secret: appSecret,
-      algorithm: 'HS256',
       expiresIn: data.expiresAt ? secondsBeforeExpire : undefined,
       issuer: 'Docmost',
     });

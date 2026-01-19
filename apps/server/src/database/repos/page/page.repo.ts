@@ -486,9 +486,6 @@ export class PageRepo {
   }
 
   async getPagesForTree(opts: {
-    workspaceId?: string;
-    spaceId?: string;
-    creatorId?: string;
     pageIds?: string[];
   }) {
     if (opts.pageIds && opts.pageIds.length === 0) {
@@ -509,18 +506,6 @@ export class PageRepo {
         'updatedAt',
       ])
       .where('deletedAt', 'is', null);
-
-    if (opts.workspaceId) {
-      query = query.where('workspaceId', '=', opts.workspaceId);
-    }
-
-    if (opts.spaceId) {
-      query = query.where('spaceId', '=', opts.spaceId);
-    }
-
-    if (opts.creatorId) {
-      query = query.where('creatorId', '=', opts.creatorId);
-    }
 
     if (opts.pageIds) {
       query = query.where('id', 'in', opts.pageIds);

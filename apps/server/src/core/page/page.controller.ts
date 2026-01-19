@@ -36,6 +36,8 @@ import { PageRepo } from '@docmost/db/repos/page/page.repo';
 import { RecentPageDto } from './dto/recent-page.dto';
 import { DuplicatePageDto } from './dto/duplicate-page.dto';
 import { DeletedPageDto } from './dto/deleted-page.dto';
+import { SpaceMemberService } from '../space/services/space-member.service';
+import { SpaceMemberRepo } from '@docmost/db/repos/space/space-member.repo';
 
 @UseGuards(JwtAuthGuard)
 @Controller('pages')
@@ -392,11 +394,27 @@ export class PageController {
   }
 
   @HttpCode(HttpStatus.OK)
-  @Post('tree')
-  async getPagesTree(
-    @Body() dto: GetPagesTreeDto,
-    @AuthWorkspace() workspace: Workspace,
-  ) {
-    return this.pageService.getPagesTree(dto, workspace.id);
+  @Post('pages/tree')
+  async getPagesTree(@AuthUser() user: User) {
+    const spaceIds = await this.pageService.getUserSpaceIds(user.id);
+
+    const pageIds: string[] = [];
+
+    for (const spaceId of spaceIds) {
+      const ability = await this.spaceAbility.createForUser(user, spaceId);
+      if (ability.cannot(SpaceCaslAction.Read, SpaceCaslSubject.Page)) {
+        continue;
+      }
+
+      const pageIdsFromSpace = await this.pageService.getUserAccessiblePageIds(spaceId);
+
+      const pageIdsForEachSpace = pageIdsFromSpace.map((pageId) => pageId.id);
+
+      pageIds.push(...pageIdsForEachSpace);
+    }
+
+
+
+    return this.pageService.getPagesTree(pageIds);
   }
 }

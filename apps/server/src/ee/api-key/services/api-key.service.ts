@@ -10,6 +10,7 @@ import { UserRepo } from '@docmost/db/repos/user/user.repo';
 import { EnvironmentService } from '../../../integrations/environment/environment.service';
 import { CreateApiKeyDto } from '@docmost/ee/api-key/dto';
 import { User } from '@docmost/db/types/entity.types';
+import type { SignOptions } from 'jsonwebtoken';
 
 @Injectable()
 export class ApiKeyService {
@@ -35,19 +36,27 @@ export class ApiKeyService {
       type: JwtType.ACCESS,
     };
 
-    const now = new Date();
-    const expiresAt = new Date(data.expiresAt || 0);
 
-    const toSeconds = expiresAt.getTime() - now.getTime() / 1000;
-    const secondsBeforeExpire = `${toSeconds}s`;
+
+
 
     const appSecret = this.environmentService.getAppSecret();
 
-    const token: string = this.jwtService.sign(payload, {
+    const jwtOptions: SignOptions & { secret: string } = {
       secret: appSecret,
-      expiresIn: data.expiresAt ? secondsBeforeExpire : undefined,
       issuer: 'Docmost',
-    });
+    }
+    const isExpiredDateProvided = Boolean(data.expiresAt);
+
+    if (isExpiredDateProvided) {
+      const now = new Date();
+      const expiresAt = new Date(data.expiresAt);
+
+      const toSeconds = expiresAt.getTime() - now.getTime() / 1000;
+      jwtOptions.expiresIn = `${toSeconds}s`;
+    }
+
+    const token: string = this.jwtService.sign(payload, jwtOptions);
 
     const userToken = await this.db
       .insertInto('userTokens')

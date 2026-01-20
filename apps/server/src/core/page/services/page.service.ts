@@ -745,7 +745,7 @@ export class PageService {
         );
 
     const tree = rootPages.map((page) => buildNode(page, 0))
-
+    console.log(tree);
     return tree;
   }
 }

@@ -36,7 +36,7 @@ export class ApiKeyService {
     };
 
     const now = new Date();
-    const expiresAt = new Date(data.expiresAt);
+    const expiresAt = new Date(data.expiresAt || 0);
 
     const toSeconds = expiresAt.getTime() - now.getTime() / 1000;
     const secondsBeforeExpire = `${toSeconds}s`;

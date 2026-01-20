@@ -89,6 +89,7 @@ export class ExportController {
 
     return {
       content: html,
+      ...page,
     };
   }
 

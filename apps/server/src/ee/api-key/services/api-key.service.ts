@@ -36,10 +36,6 @@ export class ApiKeyService {
       type: JwtType.ACCESS,
     };
 
-
-
-
-
     const appSecret = this.environmentService.getAppSecret();
 
     const jwtOptions: SignOptions & { secret: string } = {

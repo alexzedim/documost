@@ -7,7 +7,6 @@ import {
   HttpStatus,
   NotFoundException,
   Post,
-  Res,
   Headers,
   UseGuards,
 } from '@nestjs/common';
@@ -399,7 +398,7 @@ export class PageController {
   async getPagesTree(
     @AuthUser() user: User,
     @Headers('if-modified-since') ifModifiedSinceHeader?: string,
-    @Res() res?: FastifyReply,
+    // @Res() res?: FastifyReply,
   ) {
     const spaceIds = await this.pageService.getUserSpaceIds(user.id);
 
@@ -428,12 +427,12 @@ export class PageController {
       const clientDate = new Date(ifModifiedSinceHeader);
       console.log(latestModified, '<=', clientDate, latestModified <= clientDate)
       if (latestModified <= clientDate) {
-        res.statusCode = HttpStatus.NOT_MODIFIED;
-        res.send();
-        return;
+        // res.statusCode = HttpStatus.NOT_MODIFIED;
+        // res.send();
+        // return;
       }
     }
 
-    return this.pageService.getPagesTree(pageIdsArray);
+    return await this.pageService.getPagesTree(pageIdsArray);
   }
 }

@@ -38,9 +38,7 @@ import { PageRepo } from '@docmost/db/repos/page/page.repo';
 import { RecentPageDto } from './dto/recent-page.dto';
 import { DuplicatePageDto } from './dto/duplicate-page.dto';
 import { DeletedPageDto } from './dto/deleted-page.dto';
-import { ExportSpaceDto } from '../../integrations/export/dto/export-dto';
-import { FastifyReply } from 'fastify';
-import { PageTreeDto } from 'src/core/page/dto/page-tree.dto';
+import { FastifyReply } from 'fastify';;
 
 @UseGuards(JwtAuthGuard)
 @Controller('pages')
@@ -400,7 +398,6 @@ export class PageController {
   @Post('tree')
   async getPagesTree(
     @AuthUser() user: User,
-    @Body() dto: PageTreeDto,
     @Headers('if-modified-since') ifModifiedSinceHeader?: string,
     @Res() res?: FastifyReply,
   ) {
@@ -429,6 +426,7 @@ export class PageController {
     // Check If-Modified-Since header with latestModified, if no updates, return 304
     if (ifModifiedSinceHeader && latestModified) {
       const clientDate = new Date(ifModifiedSinceHeader);
+      console.log(latestModified, '<=', clientDate, latestModified <= clientDate)
       if (latestModified <= clientDate) {
         res.statusCode = HttpStatus.NOT_MODIFIED;
         res.send();
@@ -436,6 +434,6 @@ export class PageController {
       }
     }
 
-    return this.pageService.getPagesTree(pageIdsArray, Boolean(dto.withContent));
+    return this.pageService.getPagesTree(pageIdsArray);
   }
 }

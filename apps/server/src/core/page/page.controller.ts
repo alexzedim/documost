@@ -435,4 +435,32 @@ export class PageController {
 
     return await this.pageService.getPagesTree(pageIdsArray);
   }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('user-page-ids')
+  async getUserPageIds(
+    @AuthUser() user: User,
+  ) {
+    const spaceIds = await this.pageService.getUserSpaceIds(user.id);
+
+    const pageIds = new Set<string>();
+
+    for (const spaceId of spaceIds) {
+      const ability = await this.spaceAbility.createForUser(user, spaceId);
+      if (ability.cannot(SpaceCaslAction.Read, SpaceCaslSubject.Page)) {
+        continue;
+      }
+
+      const pageIdsFromSpace =
+        await this.pageService.getUserAccessiblePageIds(spaceId);
+      const pageIdsForEachSpace = pageIdsFromSpace.map((pageId) => pageId.id);
+
+      pageIdsForEachSpace.forEach((id) => pageIds.add(id));
+    }
+
+    return {
+      pageIds: Array.from(pageIds),
+    };
+  }
+
 }

@@ -40,6 +40,7 @@ import { DuplicatePageDto } from './dto/duplicate-page.dto';
 import { DeletedPageDto } from './dto/deleted-page.dto';
 import { ExportSpaceDto } from '../../integrations/export/dto/export-dto';
 import { FastifyReply } from 'fastify';
+import { PageTreeDto } from 'src/core/page/dto/page-tree.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('pages')
@@ -399,6 +400,7 @@ export class PageController {
   @Post('tree')
   async getPagesTree(
     @AuthUser() user: User,
+    @Body() dto: PageTreeDto,
     @Headers('if-modified-since') ifModifiedSinceHeader?: string,
     @Res() res?: FastifyReply,
   ) {
@@ -434,6 +436,6 @@ export class PageController {
       }
     }
 
-    return this.pageService.getPagesTree(pageIdsArray);
+    return this.pageService.getPagesTree(pageIdsArray, Boolean(dto.withContent));
   }
 }

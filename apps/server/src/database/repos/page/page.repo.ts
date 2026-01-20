@@ -492,6 +492,7 @@ export class PageRepo {
 
   async getPagesForTree(opts: {
     pageIds: string[];
+    includeContent: boolean;
   }) {
     if (opts.pageIds.length === 0) {
       return [];
@@ -510,6 +511,7 @@ export class PageRepo {
         'createdAt',
         'updatedAt',
       ])
+      .$if(opts?.includeContent, (qb) => qb.select('content'))
       .where('deletedAt', 'is', null);
 
     if (opts.pageIds) {

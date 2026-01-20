@@ -659,10 +659,12 @@ export class PageService {
   }
 
   async getPagesTree(
-    pageIds: string[]
+    pageIds: string[],
+    includeContent: boolean,
   ): Promise<WikiPageType[]> {
     const pages = await this.pageRepo.getPagesForTree({
       pageIds,
+      includeContent,
     });
 
     if (pages.length === 0) {

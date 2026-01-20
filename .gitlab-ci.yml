@@ -1,0 +1,65 @@
+stages:
+  - get_version_tag
+  - build
+  - deploy
+
+variables:
+  CHECK_DEPLOY_LOG: |
+    echo "Checking for errors in the script output..."
+    if grep -qi "Error: initializing source" output.log; then
+      echo "Errors found in the script output. Failing the job."
+      exit 1
+    else
+      echo "No errors found. Job completed successfully."
+    fi
+
+get_version_tag:
+  stage: get_version_tag
+  script:
+    - |
+      apk add --no-cache jq
+      PACKAGE_VERSION=$(jq -r '.version' package.json)
+      if [ "$CI_COMMIT_BRANCH" == "dev" ]; then 
+          IMAGE_TAG=v${PACKAGE_VERSION}-dev
+      else
+          IMAGE_TAG=v${PACKAGE_VERSION}
+      fi
+      echo "IMAGE_TAG=$IMAGE_TAG" >> build.env
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: on_success
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+      when: on_success
+  artifacts:
+    reports:
+      dotenv: build.env
+
+build:
+  stage: build
+  variables:
+    APP_NAME: wiki
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker build -t $CI_REGISTRY_IMAGE:$IMAGE_TAG . -f redos.Dockerfile --build-arg APP_NAME="${APP_NAME}"
+    - docker push $CI_REGISTRY_IMAGE:$IMAGE_TAG
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: on_success
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+      when: on_success
+  needs:
+    - get_version_tag
+
+deploy-dev:
+  stage: deploy
+  image: docker-group.sigma-it.ru/kroniak/ssh-client
+  before_script:
+    - chmod 400 "$SSH_PRIVATE_KEY_TEST"
+  script:
+    - ssh -o StrictHostKeychecking=no -i "$SSH_PRIVATE_KEY_TEST" user@dpis-ai2.sigma-it.local "cd dev-stand-deploy && sed -i \"s/^\(.*BACKEND_VERSION=\).*/\1${IMAGE_TAG}/\" .env && docker compose up -d" 2>&1 | tee output.log
+    - bash -c "$CHECK_DEPLOY_LOG"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+  needs:
+    - get_version_tag
+    - build

@@ -19,11 +19,7 @@ get_version_tag:
     - |
       apk add --no-cache jq
       PACKAGE_VERSION=$(jq -r '.version' package.json)
-      if [ "$CI_COMMIT_BRANCH" == "dev" ]; then 
-          IMAGE_TAG=v${PACKAGE_VERSION}-dev
-      else
-          IMAGE_TAG=v${PACKAGE_VERSION}
-      fi
+      IMAGE_TAG=v${PACKAGE_VERSION}
       echo "IMAGE_TAG=$IMAGE_TAG" >> build.env
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'

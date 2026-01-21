@@ -11,7 +11,7 @@ import {
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { AuthUser } from '../../../common/decorators/auth-user.decorator';
 import { AuthWorkspace } from '../../../common/decorators/auth-workspace.decorator';
-import { User, Workspace } from '@docmost/db/types/entity.types';
+import { User, Workspace } from '@wiki/db/types/entity.types';
 import { AiService } from '../services/ai.service';
 import { AiSearchService } from '../services/ai-search.service';
 import { FastifyReply } from 'fastify';

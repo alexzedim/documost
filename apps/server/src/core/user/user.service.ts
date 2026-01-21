@@ -1,4 +1,4 @@
-import { UserRepo } from '@docmost/db/repos/user/user.repo';
+import { UserRepo } from '@wiki/db/repos/user/user.repo';
 import {
   BadRequestException,
   Injectable,
@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { comparePasswordHash } from 'src/common/helpers/utils';
-import { Workspace } from '@docmost/db/types/entity.types';
+import { Workspace } from '@wiki/db/types/entity.types';
 import { validateSsoEnforcement } from '../auth/auth.util';
 
 @Injectable()
@@ -70,7 +70,9 @@ export class UserService {
       );
 
       if (!isPasswordMatch) {
-        throw new BadRequestException('You must provide the correct password to change your email');
+        throw new BadRequestException(
+          'You must provide the correct password to change your email',
+        );
       }
 
       if (await this.userRepo.findByEmail(updateUserDto.email, workspace.id)) {

@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { AuthWorkspace } from '../../../common/decorators/auth-workspace.decorator';
-import { Workspace } from '@docmost/db/types/entity.types';
+import { Workspace } from '@wiki/db/types/entity.types';
 import { LicenseService } from '../services/license.service';
 
 @UseGuards(JwtAuthGuard)

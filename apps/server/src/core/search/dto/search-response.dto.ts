@@ -1,4 +1,4 @@
-import { Space } from '@docmost/db/types/entity.types';
+import { Space } from '@wiki/db/types/entity.types';
 
 export class SearchResponseDto {
   id: string;

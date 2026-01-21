@@ -1,7 +1,7 @@
 // /ee/sso/services/oidc.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
-import { KyselyDB } from '@docmost/db/types/kysely.types';
+import { KyselyDB } from '@wiki/db/types/kysely.types';
 
 @Injectable()
 export class OidcService {
@@ -29,7 +29,10 @@ export class OidcService {
     return `${authUrl}?${params.toString()}`;
   }
 
-  async handleCallback(providerId: string, data: any): Promise<{ token: string }> {
+  async handleCallback(
+    providerId: string,
+    data: any,
+  ): Promise<{ token: string }> {
     // Exchange code for tokens
     // Validate ID token
     // Extract user info

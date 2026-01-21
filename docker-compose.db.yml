@@ -4,16 +4,16 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: docmost
-      POSTGRES_USER: docmost
-      POSTGRES_PASSWORD: docmost123
+      POSTGRES_DB: wiki
+      POSTGRES_USER: wiki
+      POSTGRES_PASSWORD: wiki123
     ports:
       - "5432:5432"
     restart: unless-stopped
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U docmost"]
+      test: ["CMD-SHELL", "pg_isready -U wiki"]
       interval: 10s
       timeout: 5s
       retries: 5

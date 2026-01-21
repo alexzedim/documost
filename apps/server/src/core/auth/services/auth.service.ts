@@ -14,7 +14,7 @@ import { CreateUserDto } from '../dto/create-user.dto';
 import { TokenService } from './token.service';
 import { SignupService } from './signup.service';
 import { CreateAdminUserDto } from '../dto/create-admin-user.dto';
-import { UserRepo } from '@docmost/db/repos/user/user.repo';
+import { UserRepo } from '@wiki/db/repos/user/user.repo';
 import {
   comparePasswordHash,
   extractBearerTokenFromHeader,
@@ -25,20 +25,24 @@ import {
 } from '../../../common/helpers';
 import { ChangePasswordDto } from '../dto/change-password.dto';
 import { MailService } from '../../../integrations/mail/mail.service';
-import ChangePasswordEmail from '@docmost/transactional/emails/change-password-email';
+import ChangePasswordEmail from '@wiki/transactional/emails/change-password-email';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
-import ForgotPasswordEmail from '@docmost/transactional/emails/forgot-password-email';
-import { UserTokenRepo } from '@docmost/db/repos/user-token/user-token.repo';
+import ForgotPasswordEmail from '@wiki/transactional/emails/forgot-password-email';
+import { UserTokenRepo } from '@wiki/db/repos/user-token/user-token.repo';
 import { PasswordResetDto } from '../dto/password-reset.dto';
-import { User, UserToken, Workspace } from '@docmost/db/types/entity.types';
+import { User, UserToken, Workspace } from '@wiki/db/types/entity.types';
 import { UserTokenType } from '../auth.constants';
-import { KyselyDB } from '@docmost/db/types/kysely.types';
+import { KyselyDB } from '@wiki/db/types/kysely.types';
 import { InjectKysely } from 'nestjs-kysely';
-import { executeTx } from '@docmost/db/utils';
+import { executeTx } from '@wiki/db/utils';
 import { VerifyUserTokenDto } from '../dto/verify-user-token.dto';
 import { DomainService } from '../../../integrations/environment/domain.service';
 import { EnvironmentService } from '../../../integrations/environment/environment.service';
-import { AuthResponse, KeycloakAuthUser, KeyCloakUserInfo } from 'src/core/auth/dto/keycloak-payload';
+import {
+  AuthResponse,
+  KeycloakAuthUser,
+  KeyCloakUserInfo,
+} from 'src/core/auth/dto/keycloak-payload';
 import { FastifyRequest } from 'fastify';
 import * as crypto from 'crypto';
 import { RedisService } from '@nestjs-labs/nestjs-ioredis';
@@ -100,28 +104,30 @@ export class AuthService {
       }
 
       if (!user) {
-          const keycloakUser = await this.authKeycloakProvider(email, password);
+        const keycloakUser = await this.authKeycloakProvider(email, password);
 
-          if (!keycloakUser) {
-            throw new UnauthorizedException('Domain user not found');
-          }
+        if (!keycloakUser) {
+          throw new UnauthorizedException('Domain user not found');
+        }
 
-          if (!user) {
-            user = await this.userRepo.insertUser({
-              id: keycloakUser.id,
-              name: keycloakUser.username,
-              email: keycloakUser.email,
-              workspaceId: workspaceId,
-            });
+        if (!user) {
+          user = await this.userRepo.insertUser({
+            id: keycloakUser.id,
+            name: keycloakUser.username,
+            email: keycloakUser.email,
+            workspaceId: workspaceId,
+          });
 
-            const { username, namespace } = extractUsernameAndSpaceName(user.name);
+          const { username, namespace } = extractUsernameAndSpaceName(
+            user.name,
+          );
 
-            await this.spaceService.createSpace(user, workspaceId, {
-              name: namespace,
-              description: 'Ваши личное пространство',
-              slug: generateSlugId(),
-            });
-          }
+          await this.spaceService.createSpace(user, workspaceId, {
+            name: namespace,
+            description: 'Ваши личное пространство',
+            slug: generateSlugId(),
+          });
+        }
       }
 
       if (!user || user?.deletedAt) {
@@ -137,7 +143,10 @@ export class AuthService {
       if (error instanceof HttpException) {
         const status = error.getStatus() as HttpStatus;
 
-        if (status === HttpStatus.UNAUTHORIZED || status === HttpStatus.NOT_FOUND) {
+        if (
+          status === HttpStatus.UNAUTHORIZED ||
+          status === HttpStatus.NOT_FOUND
+        ) {
           await this.recordFailedLoginAttempt(deviceIdentifier);
         }
       }
@@ -352,15 +361,16 @@ export class AuthService {
       };
 
       // Get token from Keycloak - Axios will automatically serialize the object
-      const tokenResponse = await this.httpService.axiosRef.request<AuthResponse>({
-        method: 'POST',
-        url: tokenUrl,
-        data: tokenParams,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        httpsAgent: new Agent({ rejectUnauthorized: false }),
-      });
+      const tokenResponse =
+        await this.httpService.axiosRef.request<AuthResponse>({
+          method: 'POST',
+          url: tokenUrl,
+          data: tokenParams,
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          httpsAgent: new Agent({ rejectUnauthorized: false }),
+        });
 
       const tokens: AuthResponse = tokenResponse.data;
 
@@ -380,16 +390,22 @@ export class AuthService {
 
       return keycloakUser;
     } catch (error) {
-      this.logger.log({ logTag, message: 'check keycloak integration', error: error });
+      this.logger.log({
+        logTag,
+        message: 'check keycloak integration',
+        error: error,
+      });
 
       return undefined;
     }
   }
 
-    /**
+  /**
    * Helper method to extract user info from JWT token
    */
-  private async getUserInfoFromToken(accessToken: string): Promise<KeycloakAuthUser | undefined> {
+  private async getUserInfoFromToken(
+    accessToken: string,
+  ): Promise<KeycloakAuthUser | undefined> {
     const logTag = this.getUserInfoFromToken.name;
 
     const keycloak = this.environmentService.getKeycloakUrl();
@@ -399,12 +415,13 @@ export class AuthService {
       // Get user info from Keycloak userinfo endpoint
       const userInfoUrl = `${keycloak}/realms/${realm}/protocol/openid-connect/userinfo`;
 
-      const userInfoResponse = await this.httpService.axiosRef.get<KeyCloakUserInfo>(userInfoUrl, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        httpsAgent: new Agent({ rejectUnauthorized: false }),
-      });
+      const userInfoResponse =
+        await this.httpService.axiosRef.get<KeyCloakUserInfo>(userInfoUrl, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          httpsAgent: new Agent({ rejectUnauthorized: false }),
+        });
 
       const userInfo: KeyCloakUserInfo = userInfoResponse.data;
 
@@ -429,7 +446,6 @@ export class AuthService {
     }
   }
 
-
   private generateDeviceIdentifier(req: FastifyRequest): string {
     // Collect primary components
     const ip = req.ip || req.socket?.remoteAddress || 'unknown';
@@ -448,7 +464,7 @@ export class AuthService {
     return hash.digest('hex');
   }
 
-    /**
+  /**
    * Check if user/IP is currently locked out
    * @param identifier - User identifier (email, IP, or combination)
    * @throws HttpException if locked out

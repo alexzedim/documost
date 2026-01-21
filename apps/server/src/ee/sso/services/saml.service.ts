@@ -1,7 +1,7 @@
 // /ee/sso/services/saml.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
-import { KyselyDB } from '@docmost/db/types/kysely.types';
+import { KyselyDB } from '@wiki/db/types/kysely.types';
 
 @Injectable()
 export class SamlService {
@@ -22,7 +22,10 @@ export class SamlService {
     return `${provider.samlUrl}?SAMLRequest=...`;
   }
 
-  async handleCallback(providerId: string, data: any): Promise<{ token: string }> {
+  async handleCallback(
+    providerId: string,
+    data: any,
+  ): Promise<{ token: string }> {
     // Validate SAML response
     // Extract user info
     // Create or update user

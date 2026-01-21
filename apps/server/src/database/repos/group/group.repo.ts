@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
-import { KyselyDB, KyselyTransaction } from '@docmost/db/types/kysely.types';
-import { dbOrTx } from '@docmost/db/utils';
+import { KyselyDB, KyselyTransaction } from '@wiki/db/types/kysely.types';
+import { dbOrTx } from '@wiki/db/utils';
 import {
   Group,
   InsertableGroup,
   UpdatableGroup,
-} from '@docmost/db/types/entity.types';
+} from '@wiki/db/types/entity.types';
 import { ExpressionBuilder, sql } from 'kysely';
 import { PaginationOptions } from '../../pagination/pagination-options';
-import { DB } from '@docmost/db/types/db';
-import { executeWithPagination } from '@docmost/db/pagination/pagination';
+import { DB } from '@wiki/db/types/db';
+import { executeWithPagination } from '@wiki/db/pagination/pagination';
 import { DefaultGroup } from '../../../core/group/dto/create-group.dto';
 
 @Injectable()
@@ -114,7 +114,11 @@ export class GroupRepo {
 
     if (pagination.query) {
       query = query.where((eb) =>
-        eb(sql`f_unaccent(name)`, 'ilike', sql`f_unaccent(${'%' + pagination.query + '%'})`).or(
+        eb(
+          sql`f_unaccent(name)`,
+          'ilike',
+          sql`f_unaccent(${'%' + pagination.query + '%'})`,
+        ).or(
           sql`f_unaccent(description)`,
           'ilike',
           sql`f_unaccent(${'%' + pagination.query + '%'})`,

@@ -4,13 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CreateSpaceDto } from '../dto/create-space.dto';
-import { PaginationOptions } from '@docmost/db/pagination/pagination-options';
-import { SpaceRepo } from '@docmost/db/repos/space/space.repo';
-import { KyselyDB, KyselyTransaction } from '@docmost/db/types/kysely.types';
-import { Space, User } from '@docmost/db/types/entity.types';
-import { PaginationResult } from '@docmost/db/pagination/pagination';
+import { PaginationOptions } from '@wiki/db/pagination/pagination-options';
+import { SpaceRepo } from '@wiki/db/repos/space/space.repo';
+import { KyselyDB, KyselyTransaction } from '@wiki/db/types/kysely.types';
+import { Space, User } from '@wiki/db/types/entity.types';
+import { PaginationResult } from '@wiki/db/pagination/pagination';
 import { UpdateSpaceDto } from '../dto/update-space.dto';
-import { executeTx } from '@docmost/db/utils';
+import { executeTx } from '@wiki/db/utils';
 import { InjectKysely } from 'nestjs-kysely';
 import { SpaceMemberService } from './space-member.service';
 import { SpaceRole } from '../../../common/helpers/types/permission';

@@ -6,11 +6,11 @@ import {
   Comment,
   InsertableComment,
   UpdatableComment,
-} from '@docmost/db/types/entity.types';
-import { PaginationOptions } from '@docmost/db/pagination/pagination-options';
-import { executeWithPagination } from '@docmost/db/pagination/pagination';
+} from '@wiki/db/types/entity.types';
+import { PaginationOptions } from '@wiki/db/pagination/pagination-options';
+import { executeWithPagination } from '@wiki/db/pagination/pagination';
 import { ExpressionBuilder } from 'kysely';
-import { DB } from '@docmost/db/types/db';
+import { DB } from '@wiki/db/types/db';
 import { jsonObjectFrom } from 'kysely/helpers/postgres';
 
 @Injectable()
@@ -105,7 +105,10 @@ export class CommentRepo {
     return Number(result?.count) > 0;
   }
 
-  async hasChildrenFromOtherUsers(commentId: string, userId: string): Promise<boolean> {
+  async hasChildrenFromOtherUsers(
+    commentId: string,
+    userId: string,
+  ): Promise<boolean> {
     const result = await this.db
       .selectFrom('comments')
       .select((eb) => eb.fn.count('id').as('count'))

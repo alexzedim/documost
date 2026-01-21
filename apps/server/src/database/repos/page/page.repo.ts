@@ -6,14 +6,14 @@ import {
   InsertablePage,
   Page,
   UpdatablePage,
-} from '@docmost/db/types/entity.types';
-import { PaginationOptions } from '@docmost/db/pagination/pagination-options';
-import { executeWithPagination } from '@docmost/db/pagination/pagination';
+} from '@wiki/db/types/entity.types';
+import { PaginationOptions } from '@wiki/db/pagination/pagination-options';
+import { executeWithPagination } from '@wiki/db/pagination/pagination';
 import { validate as isValidUUID } from 'uuid';
 import { ExpressionBuilder, sql } from 'kysely';
-import { DB } from '@docmost/db/types/db';
+import { DB } from '@wiki/db/types/db';
 import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/postgres';
-import { SpaceMemberRepo } from '@docmost/db/repos/space/space-member.repo';
+import { SpaceMemberRepo } from '@wiki/db/repos/space/space-member.repo';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventName } from '../../../common/events/event.contants';
 
@@ -457,11 +457,11 @@ export class PageRepo {
 
   async getLastModifiedSinceHeader(pageIds?: string[]): Promise<Date | null> {
     let query = this.db
-        .selectFrom('pages')
-        .select((eb) => eb.fn.max('updatedAt').as('latestUpdate'))
-        .where('deletedAt', 'is', null)
+      .selectFrom('pages')
+      .select((eb) => eb.fn.max('updatedAt').as('latestUpdate'))
+      .where('deletedAt', 'is', null);
 
-    if (!pageIds || pageIds && pageIds.length > 0) {
+    if (!pageIds || (pageIds && pageIds.length > 0)) {
       query = query.where('id', 'in', pageIds);
     }
 
@@ -490,10 +490,7 @@ export class PageRepo {
     return await query.execute();
   }
 
-  async getPagesForTree(opts: {
-    pageIds: string[];
-    includeContent: boolean;
-  }) {
+  async getPagesForTree(opts: { pageIds: string[]; includeContent: boolean }) {
     if (opts.pageIds.length === 0) {
       return [];
     }

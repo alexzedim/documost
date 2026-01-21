@@ -1,8 +1,8 @@
 // /ee/ai/services/ai-search.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
-import { KyselyDB } from '@docmost/db/types/kysely.types';
-import { User, Workspace } from '@docmost/db/types/entity.types';
+import { KyselyDB } from '@wiki/db/types/kysely.types';
+import { User, Workspace } from '@wiki/db/types/entity.types';
 import OpenAI from 'openai';
 
 @Injectable()
@@ -41,7 +41,10 @@ export class AiSearchService {
 
     // Build context from pages
     const context = pages
-      .map((p) => `Title: ${p.title}\nContent: ${p.textContent?.substring(0, 500)}`)
+      .map(
+        (p) =>
+          `Title: ${p.title}\nContent: ${p.textContent?.substring(0, 500)}`,
+      )
       .join('\n\n---\n\n');
 
     const prompt = `Based on the following documentation, answer the question. If the answer is not in the documentation, say so.

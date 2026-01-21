@@ -26,15 +26,15 @@ import { PageHistoryService } from './services/page-history.service';
 import { AuthUser } from '../../common/decorators/auth-user.decorator';
 import { AuthWorkspace } from '../../common/decorators/auth-workspace.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { PaginationOptions } from '@docmost/db/pagination/pagination-options';
-import { User, Workspace } from '@docmost/db/types/entity.types';
+import { PaginationOptions } from '@wiki/db/pagination/pagination-options';
+import { User, Workspace } from '@wiki/db/types/entity.types';
 import { SidebarPageDto } from './dto/sidebar-page.dto';
 import {
   SpaceCaslAction,
   SpaceCaslSubject,
 } from '../casl/interfaces/space-ability.type';
 import SpaceAbilityFactory from '../casl/abilities/space-ability.factory';
-import { PageRepo } from '@docmost/db/repos/page/page.repo';
+import { PageRepo } from '@wiki/db/repos/page/page.repo';
 import { RecentPageDto } from './dto/recent-page.dto';
 import { DuplicatePageDto } from './dto/duplicate-page.dto';
 import { DeletedPageDto } from './dto/deleted-page.dto';
@@ -436,6 +436,9 @@ export class PageController {
       }
     }
 
-    return this.pageService.getPagesTree(pageIdsArray, Boolean(dto.withContent));
+    return this.pageService.getPagesTree(
+      pageIdsArray,
+      Boolean(dto.withContent),
+    );
   }
 }

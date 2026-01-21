@@ -12,9 +12,9 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { AuthWorkspace } from '../../../common/decorators/auth-workspace.decorator';
-import { Workspace } from '@docmost/db/types/entity.types';
+import { Workspace } from '@wiki/db/types/entity.types';
 import { InjectKysely } from 'nestjs-kysely';
-import { KyselyDB } from '@docmost/db/types/kysely.types';
+import { KyselyDB } from '@wiki/db/types/kysely.types';
 import { SamlService } from '../services/saml.service';
 import { OidcService } from '../services/oidc.service';
 import { LdapService } from '../services/ldap.service';
@@ -45,7 +45,10 @@ export class SsoController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('info')
-  async getProviderInfo(@Body() data: { providerId: string }, @AuthWorkspace() workspace: Workspace) {
+  async getProviderInfo(
+    @Body() data: { providerId: string },
+    @AuthWorkspace() workspace: Workspace,
+  ) {
     return this.db
       .selectFrom('authProviders')
       .selectAll()
@@ -57,7 +60,10 @@ export class SsoController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('create')
-  async createProvider(@Body() data: any, @AuthWorkspace() workspace: Workspace) {
+  async createProvider(
+    @Body() data: any,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
     return this.db
       .insertInto('authProviders')
       .values({
@@ -73,7 +79,10 @@ export class SsoController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('update')
-  async updateProvider(@Body() data: any, @AuthWorkspace() workspace: Workspace) {
+  async updateProvider(
+    @Body() data: any,
+    @AuthWorkspace() workspace: Workspace,
+  ) {
     return this.db
       .updateTable('authProviders')
       .set({ ...data, updatedAt: new Date() })
@@ -86,7 +95,10 @@ export class SsoController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('delete')
-  async deleteProvider(@Body() data: { providerId: string }, @AuthWorkspace() workspace: Workspace) {
+  async deleteProvider(
+    @Body() data: { providerId: string },
+    @AuthWorkspace() workspace: Workspace,
+  ) {
     return this.db
       .updateTable('authProviders')
       .set({ deletedAt: new Date() })
@@ -97,14 +109,21 @@ export class SsoController {
 
   @Public()
   @Get('saml/:providerId/login')
-  async samlLogin(@Param('providerId') providerId: string, @Res() res: FastifyReply) {
+  async samlLogin(
+    @Param('providerId') providerId: string,
+    @Res() res: FastifyReply,
+  ) {
     const loginUrl = await this.samlService.getLoginUrl(providerId);
     res.redirect(loginUrl);
   }
 
   @Public()
   @Post('saml/:providerId/acs')
-  async samlAcs(@Param('providerId') providerId: string, @Body() data: any, @Res() res: FastifyReply) {
+  async samlAcs(
+    @Param('providerId') providerId: string,
+    @Body() data: any,
+    @Res() res: FastifyReply,
+  ) {
     const result = await this.samlService.handleCallback(providerId, data);
     res.setCookie('authToken', result.token);
     res.redirect('/');
@@ -112,7 +131,10 @@ export class SsoController {
 
   @Public()
   @Get('oidc/:providerId/login')
-  async oidcLogin(@Param('providerId') providerId: string, @Res() res: FastifyReply) {
+  async oidcLogin(
+    @Param('providerId') providerId: string,
+    @Res() res: FastifyReply,
+  ) {
     const loginUrl = await this.oidcService.getLoginUrl(providerId);
     res.redirect(loginUrl);
   }
@@ -137,11 +159,11 @@ export class SsoController {
     @Res() res: FastifyReply,
   ) {
     const result = await this.ldapService.login(providerId, data);
-    
+
     if (result.userHasMfa) {
       return { userHasMfa: true };
     }
-    
+
     res.setCookie('authToken', result.token);
     return { success: true };
   }

@@ -2,9 +2,9 @@ import {
   InsertableUserToken,
   UpdatableUserToken,
   UserToken,
-} from '@docmost/db/types/entity.types';
-import { KyselyDB, KyselyTransaction } from '@docmost/db/types/kysely.types';
-import { dbOrTx } from '@docmost/db/utils';
+} from '@wiki/db/types/entity.types';
+import { KyselyDB, KyselyTransaction } from '@wiki/db/types/kysely.types';
+import { dbOrTx } from '@wiki/db/utils';
 import { Injectable } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
 

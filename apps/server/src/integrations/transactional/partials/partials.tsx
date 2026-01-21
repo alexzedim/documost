@@ -29,9 +29,7 @@ export function MailBody({ children }: MailBodyProps) {
 
 export function MailHeader() {
   return (
-    <Section style={logo}>
-      {/* <Heading style={h1}>docmost</Heading> */}
-    </Section>
+    <Section style={logo}>{/* <Heading style={h1}>wiki</Heading> */}</Section>
   );
 }
 
@@ -40,7 +38,7 @@ export function MailFooter() {
     <Section style={footer}>
       <Row>
         <Text style={{ textAlign: 'center', color: '#706a7b' }}>
-          © {new Date().getFullYear()} Docmost, All Rights Reserved <br />
+          © {new Date().getFullYear()} Wiki, All Rights Reserved <br />
         </Text>
       </Row>
     </Section>

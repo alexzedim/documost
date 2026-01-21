@@ -1,8 +1,8 @@
 // /ee/billing/services/billing.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
-import { KyselyDB } from '@docmost/db/types/kysely.types';
-import { Workspace } from '@docmost/db/types/entity.types';
+import { KyselyDB } from '@wiki/db/types/kysely.types';
+import { Workspace } from '@wiki/db/types/entity.types';
 import Stripe from 'stripe';
 
 @Injectable()

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { PageHistoryRepo } from '@docmost/db/repos/page/page-history.repo';
-import { Page } from '@docmost/db/types/entity.types';
+import { PageHistoryRepo } from '@wiki/db/repos/page/page-history.repo';
+import { Page } from '@wiki/db/types/entity.types';
 import { isDeepStrictEqual } from 'node:util';
 
 export class UpdatedPageEvent {

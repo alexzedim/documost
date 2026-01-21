@@ -1,6 +1,6 @@
 // /ee/ai/services/ai.service.ts
 import { Injectable } from '@nestjs/common';
-import { User, Workspace } from '@docmost/db/types/entity.types';
+import { User, Workspace } from '@wiki/db/types/entity.types';
 import OpenAI from 'openai';
 
 @Injectable()
@@ -15,7 +15,11 @@ export class AiService {
     }
   }
 
-  async generateContent(data: any, user: User, workspace: Workspace): Promise<any> {
+  async generateContent(
+    data: any,
+    user: User,
+    workspace: Workspace,
+  ): Promise<any> {
     const prompt = this.buildPrompt(data);
 
     const completion = await this.openai.chat.completions.create({

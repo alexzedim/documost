@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
-import { KyselyDB, KyselyTransaction } from '@docmost/db/types/kysely.types';
-import { DB, Users } from '@docmost/db/types/db';
+import { KyselyDB, KyselyTransaction } from '@wiki/db/types/kysely.types';
+import { DB, Users } from '@wiki/db/types/db';
 import { hashPassword } from '../../../common/helpers';
-import { dbOrTx } from '@docmost/db/utils';
+import { dbOrTx } from '@wiki/db/utils';
 import {
   InsertableUser,
   UpdatableUser,
   User,
-} from '@docmost/db/types/entity.types';
+} from '@wiki/db/types/entity.types';
 import { PaginationOptions } from '../../pagination/pagination-options';
-import { executeWithPagination } from '@docmost/db/pagination/pagination';
+import { executeWithPagination } from '@wiki/db/pagination/pagination';
 import { ExpressionBuilder, sql } from 'kysely';
 import { jsonObjectFrom } from 'kysely/helpers/postgres';
 

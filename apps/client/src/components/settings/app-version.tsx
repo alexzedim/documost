@@ -2,7 +2,6 @@ import { useAppVersion } from "@/features/workspace/queries/workspace-query.ts";
 import { isCloud } from "@/lib/config.ts";
 import classes from "@/components/settings/settings.module.css";
 import { Indicator, Text, Tooltip } from "@mantine/core";
-import React from "react";
 import semverGt from "semver/functions/gt";
 import { useTranslation } from "react-i18next";
 
@@ -35,21 +34,8 @@ export default function AppVersion() {
           position="middle-end"
           style={{ cursor: "pointer" }}
           disabled={!hasUpdate}
-          onClick={() => {
-            window.open(
-              "https://github.com/docmost/docmost/releases",
-              "_blank"
-            );
-          }}
         >
-          <Text
-            size="sm"
-            c="dimmed"
-            component="a"
-            mr={45}
-            href="https://github.com/docmost/docmost/releases"
-            target="_blank"
-          >
+          <Text size="sm" c="dimmed" component="p" mr={45}>
             {appVersion?.currentVersion && <>v{appVersion?.currentVersion}</>}
           </Text>
         </Indicator>

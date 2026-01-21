@@ -22,7 +22,7 @@ APP_SECRET: "openssl rand -hex 32"
 
 # Cобираем editor-ext:
 
-pnpm nx run @docmost/editor-ext:build
+pnpm nx run @wiki/editor-ext:build
 
 # Сборка и запуск
 

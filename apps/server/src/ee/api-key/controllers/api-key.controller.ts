@@ -10,8 +10,8 @@ import { ApiKeyService } from '../services/api-key.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { AuthUser } from '../../../common/decorators/auth-user.decorator';
 import { AuthWorkspace } from '../../../common/decorators/auth-workspace.decorator';
-import { User, Workspace } from '@docmost/db/types/entity.types';
-import { CreateApiKeyDto } from '@docmost/ee/api-key/dto';
+import { User, Workspace } from '@wiki/db/types/entity.types';
+import { CreateApiKeyDto } from '@wiki/ee/api-key/dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('api-keys')

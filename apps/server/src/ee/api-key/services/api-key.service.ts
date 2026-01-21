@@ -1,15 +1,15 @@
 // /ee/api-key/api-key.service.ts
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
-import { KyselyDB } from '@docmost/db/types/kysely.types';
+import { KyselyDB } from '@wiki/db/types/kysely.types';
 import { JwtService } from '@nestjs/jwt';
 import * as crypto from 'crypto';
 import { JwtApiKeyPayload, JwtType } from '../../../core/auth/dto/jwt-payload';
-import { WorkspaceRepo } from '@docmost/db/repos/workspace/workspace.repo';
-import { UserRepo } from '@docmost/db/repos/user/user.repo';
+import { WorkspaceRepo } from '@wiki/db/repos/workspace/workspace.repo';
+import { UserRepo } from '@wiki/db/repos/user/user.repo';
 import { EnvironmentService } from '../../../integrations/environment/environment.service';
-import { CreateApiKeyDto } from '@docmost/ee/api-key/dto';
-import { User } from '@docmost/db/types/entity.types';
+import { CreateApiKeyDto } from '@wiki/ee/api-key/dto';
+import { User } from '@wiki/db/types/entity.types';
 
 @Injectable()
 export class ApiKeyService {
@@ -46,7 +46,7 @@ export class ApiKeyService {
     const token: string = this.jwtService.sign(payload, {
       secret: appSecret,
       expiresIn: data.expiresAt ? secondsBeforeExpire : undefined,
-      issuer: 'Docmost',
+      issuer: 'Wiki',
     });
 
     const userToken = await this.db

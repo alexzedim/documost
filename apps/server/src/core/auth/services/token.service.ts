@@ -14,7 +14,7 @@ import {
   JwtPayload,
   JwtType,
 } from '../dto/jwt-payload';
-import { User } from '@docmost/db/types/entity.types';
+import { User } from '@wiki/db/types/entity.types';
 
 @Injectable()
 export class TokenService {

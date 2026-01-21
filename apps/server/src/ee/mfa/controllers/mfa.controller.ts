@@ -1,9 +1,16 @@
 // /ee/mfa/controllers/mfa.controller.ts
-import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { MfaService } from '../services/mfa.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { AuthUser } from '../../../common/decorators/auth-user.decorator';
-import { User } from '@docmost/db/types/entity.types';
+import { User } from '@wiki/db/types/entity.types';
 
 @Controller('mfa')
 export class MfaController {
@@ -17,14 +24,19 @@ export class MfaController {
     return {
       isEnabled: settings?.isEnabled || false,
       method: settings?.method || null,
-      backupCodesCount: settings?.backupCodes ? JSON.parse(settings.backupCodes).length : 0,
+      backupCodesCount: settings?.backupCodes
+        ? JSON.parse(settings.backupCodes).length
+        : 0,
     };
   }
 
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('setup')
-  async setup(@AuthUser() user: User, @Body() body: { method: 'totp' | 'email' }) {
+  async setup(
+    @AuthUser() user: User,
+    @Body() body: { method: 'totp' | 'email' },
+  ) {
     return this.mfaService.setupMfa(user.id, body.method);
   }
 
@@ -35,13 +47,20 @@ export class MfaController {
     @AuthUser() user: User,
     @Body() body: { secret: string; verificationCode: string },
   ) {
-    return this.mfaService.enableMfa(user.id, body.secret, body.verificationCode);
+    return this.mfaService.enableMfa(
+      user.id,
+      body.secret,
+      body.verificationCode,
+    );
   }
 
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('disable')
-  async disable(@AuthUser() user: User, @Body() body: { confirmPassword?: string }) {
+  async disable(
+    @AuthUser() user: User,
+    @Body() body: { confirmPassword?: string },
+  ) {
     return this.mfaService.disableMfa(user.id, body.confirmPassword);
   }
 

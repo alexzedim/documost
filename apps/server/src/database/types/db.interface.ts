@@ -19,8 +19,8 @@ import {
   UserTokens,
   WorkspaceInvitations,
   Workspaces,
-} from '@docmost/db/types/db';
-import { PageEmbeddings } from '@docmost/db/types/embeddings.types';
+} from '@wiki/db/types/db';
+import { PageEmbeddings } from '@wiki/db/types/embeddings.types';
 
 export interface DbInterface {
   attachments: Attachments;

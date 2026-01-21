@@ -124,7 +124,7 @@ export class EnvironmentService {
   }
 
   getMailFromName(): string {
-    return this.configService.get<string>('MAIL_FROM_NAME', 'Docmost');
+    return this.configService.get<string>('MAIL_FROM_NAME', 'WIKI');
   }
 
   getSmtpHost(): string {
@@ -279,7 +279,10 @@ export class EnvironmentService {
   }
 
   getKeycloakUrl(): string {
-    return this.configService.get<string>('KEYCLOAK_URL', 'http://localhost:3100');
+    return this.configService.get<string>(
+      'KEYCLOAK_URL',
+      'http://localhost:3100',
+    );
   }
 
   getKeycloakRealm(): string {
@@ -301,8 +304,10 @@ export class EnvironmentService {
   getLoginMaxAttempts(): number {
     return parseInt(this.configService.get<string>('LOGIN_MAX_ATTEMPTS', '10'));
   }
-  
+
   getLoginTimeourSeconds(): number {
-    return parseInt(this.configService.get<string>('LOGIN_TIMEOUT_SECONDS', '60'));
+    return parseInt(
+      this.configService.get<string>('LOGIN_TIMEOUT_SECONDS', '60'),
+    );
   }
 }

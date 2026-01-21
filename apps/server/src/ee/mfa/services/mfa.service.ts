@@ -5,11 +5,11 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
-import { KyselyDB } from '@docmost/db/types/kysely.types';
+import { KyselyDB } from '@wiki/db/types/kysely.types';
 import * as speakeasy from 'speakeasy';
 import * as qrcode from 'qrcode';
 import * as bcrypt from 'bcrypt';
-import { Workspace } from '@docmost/db/types/entity.types';
+import { Workspace } from '@wiki/db/types/entity.types';
 import { FastifyReply } from 'fastify';
 import { JwtService } from '@nestjs/jwt';
 
@@ -97,7 +97,7 @@ export class MfaService {
       .executeTakeFirst();
 
     const secret = speakeasy.generateSecret({
-      name: `Docmost (${user.email})`,
+      name: `Wiki (${user.email})`,
       length: 32,
     });
 

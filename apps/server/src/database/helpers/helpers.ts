@@ -1,5 +1,5 @@
 import { sql } from 'kysely';
-import { KyselyDB } from '@docmost/db/types/kysely.types';
+import { KyselyDB } from '@wiki/db/types/kysely.types';
 
 export async function isPageEmbeddingsTableExists(db: KyselyDB) {
   return tableExists({ db, tableName: 'page_embeddings' });

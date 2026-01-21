@@ -1,8 +1,8 @@
 // /ee/confluence-import/confluence-import.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
-import { KyselyDB } from '@docmost/db/types/kysely.types';
-import { FileTask, InsertablePage } from '@docmost/db/types/entity.types';
+import { KyselyDB } from '@wiki/db/types/kysely.types';
+import { FileTask, InsertablePage } from '@wiki/db/types/entity.types';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { v7 } from 'uuid';
@@ -10,7 +10,7 @@ import { generateSlugId } from '../../common/helpers';
 import { generateJitteredKeyBetween } from 'fractional-indexing-jittered';
 import { ImportService } from '../../integrations/import/services/import.service';
 import { PageService } from '../../core/page/services/page.service';
-import { executeTx } from '@docmost/db/utils';
+import { executeTx } from '@wiki/db/utils';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventName } from '../../common/events/event.contants';
 import { getProsemirrorContent } from '../../common/helpers/prosemirror/utils';

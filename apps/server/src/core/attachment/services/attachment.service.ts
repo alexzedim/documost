@@ -14,15 +14,15 @@ import {
   validateFileType,
 } from '../attachment.utils';
 import { v4 as uuid4, v7 as uuid7 } from 'uuid';
-import { AttachmentRepo } from '@docmost/db/repos/attachment/attachment.repo';
+import { AttachmentRepo } from '@wiki/db/repos/attachment/attachment.repo';
 import { AttachmentType, validImageExtensions } from '../attachment.constants';
-import { KyselyDB, KyselyTransaction } from '@docmost/db/types/kysely.types';
-import { Attachment, User, Workspace } from '@docmost/db/types/entity.types';
+import { KyselyDB, KyselyTransaction } from '@wiki/db/types/kysely.types';
+import { Attachment, User, Workspace } from '@wiki/db/types/entity.types';
 import { InjectKysely } from 'nestjs-kysely';
-import { executeTx } from '@docmost/db/utils';
-import { UserRepo } from '@docmost/db/repos/user/user.repo';
-import { WorkspaceRepo } from '@docmost/db/repos/workspace/workspace.repo';
-import { SpaceRepo } from '@docmost/db/repos/space/space.repo';
+import { executeTx } from '@wiki/db/utils';
+import { UserRepo } from '@wiki/db/repos/user/user.repo';
+import { WorkspaceRepo } from '@wiki/db/repos/workspace/workspace.repo';
+import { SpaceRepo } from '@wiki/db/repos/space/space.repo';
 import { InjectQueue } from '@nestjs/bullmq';
 import { QueueJob, QueueName } from '../../../integrations/queue/constants';
 import { Queue } from 'bullmq';
@@ -142,7 +142,10 @@ export class AttachmentService {
     const preparedFile: PreparedFile = await prepareFile(filePromise);
     validateFileType(preparedFile.fileExtension, validImageExtensions);
 
-    const processedBuffer = await compressAndResizeIcon(preparedFile.buffer, type);
+    const processedBuffer = await compressAndResizeIcon(
+      preparedFile.buffer,
+      type,
+    );
     preparedFile.buffer = processedBuffer;
     preparedFile.fileSize = processedBuffer.length;
     preparedFile.fileName = uuid4() + preparedFile.fileExtension;

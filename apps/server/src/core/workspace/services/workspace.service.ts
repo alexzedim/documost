@@ -11,17 +11,17 @@ import { SpaceService } from '../../space/services/space.service';
 import { CreateSpaceDto } from '../../space/dto/create-space.dto';
 import { SpaceRole, UserRole } from '../../../common/helpers/types/permission';
 import { SpaceMemberService } from '../../space/services/space-member.service';
-import { WorkspaceRepo } from '@docmost/db/repos/workspace/workspace.repo';
-import { KyselyDB, KyselyTransaction } from '@docmost/db/types/kysely.types';
-import { executeTx } from '@docmost/db/utils';
+import { WorkspaceRepo } from '@wiki/db/repos/workspace/workspace.repo';
+import { KyselyDB, KyselyTransaction } from '@wiki/db/types/kysely.types';
+import { executeTx } from '@wiki/db/utils';
 import { InjectKysely } from 'nestjs-kysely';
-import { User } from '@docmost/db/types/entity.types';
-import { GroupUserRepo } from '@docmost/db/repos/group/group-user.repo';
-import { GroupRepo } from '@docmost/db/repos/group/group.repo';
-import { PaginationOptions } from '@docmost/db/pagination/pagination-options';
-import { PaginationResult } from '@docmost/db/pagination/pagination';
+import { User } from '@wiki/db/types/entity.types';
+import { GroupUserRepo } from '@wiki/db/repos/group/group-user.repo';
+import { GroupRepo } from '@wiki/db/repos/group/group.repo';
+import { PaginationOptions } from '@wiki/db/pagination/pagination-options';
+import { PaginationResult } from '@wiki/db/pagination/pagination';
 import { UpdateWorkspaceUserRoleDto } from '../dto/update-workspace-user-role.dto';
-import { UserRepo } from '@docmost/db/repos/user/user.repo';
+import { UserRepo } from '@wiki/db/repos/user/user.repo';
 import { EnvironmentService } from '../../../integrations/environment/environment.service';
 import { DomainService } from '../../../integrations/environment/domain.service';
 import { jsonArrayFrom } from 'kysely/helpers/postgres';
@@ -33,7 +33,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { QueueJob, QueueName } from '../../../integrations/queue/constants';
 import { Queue } from 'bullmq';
 import { generateRandomSuffixNumbers } from '../../../common/helpers';
-import { isPageEmbeddingsTableExists } from '@docmost/db/helpers/helpers';
+import { isPageEmbeddingsTableExists } from '@wiki/db/helpers/helpers';
 
 @Injectable()
 export class WorkspaceService {
@@ -510,7 +510,7 @@ export class WorkspaceService {
       await this.userRepo.updateUser(
         {
           name: 'Deleted user',
-          email: v4() + '@deleted.docmost.com',
+          email: v4(),
           avatarUrl: null,
           settings: null,
           deletedAt: new Date(),

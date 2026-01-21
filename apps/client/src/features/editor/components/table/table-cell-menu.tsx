@@ -5,7 +5,7 @@ import {
   EditorMenuProps,
   ShouldShowProps,
 } from "@/features/editor/components/table/types/types.ts";
-import { isCellSelection } from "@docmost/editor-ext";
+import { isCellSelection } from "@wiki/editor-ext";
 import { ActionIcon, Tooltip } from "@mantine/core";
 import {
   IconBoxMargin,
@@ -69,7 +69,7 @@ export const TableCellMenu = React.memo(
         <ActionIcon.Group>
           <TableBackgroundColor editor={editor} />
           <TableTextAlignment editor={editor} />
-          
+
           <Tooltip position="top" label={t("Merge cells")}>
             <ActionIcon
               onClick={mergeCells}

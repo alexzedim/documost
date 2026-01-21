@@ -1,5 +1,5 @@
 {
-  "name": "@docmost/editor-ext",
+  "name": "@wiki/editor-ext",
   "private": true,
   "scripts": {
     "build": "tsc --build",

@@ -24,9 +24,7 @@ export default function LicenseDetails() {
         layout="fixed"
         withTableBorder
       >
-        <Table.Caption>
-          Contact sales@docmost.com for support and enquiries.
-        </Table.Caption>
+        <Table.Caption></Table.Caption>
         <Table.Tbody>
           <Table.Tr>
             <Table.Th w={160}>Edition</Table.Th>

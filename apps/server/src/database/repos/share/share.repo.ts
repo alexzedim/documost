@@ -6,14 +6,14 @@ import {
   InsertableShare,
   Share,
   UpdatableShare,
-} from '@docmost/db/types/entity.types';
-import { PaginationOptions } from '@docmost/db/pagination/pagination-options';
-import { executeWithPagination } from '@docmost/db/pagination/pagination';
+} from '@wiki/db/types/entity.types';
+import { PaginationOptions } from '@wiki/db/pagination/pagination-options';
+import { executeWithPagination } from '@wiki/db/pagination/pagination';
 import { validate as isValidUUID } from 'uuid';
 import { ExpressionBuilder, sql } from 'kysely';
-import { DB } from '@docmost/db/types/db';
+import { DB } from '@wiki/db/types/db';
 import { jsonObjectFrom } from 'kysely/helpers/postgres';
-import { SpaceMemberRepo } from '@docmost/db/repos/space/space-member.repo';
+import { SpaceMemberRepo } from '@wiki/db/repos/space/space-member.repo';
 
 @Injectable()
 export class ShareRepo {

@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthUser } from '../../common/decorators/auth-user.decorator';
-import { User, Workspace } from '@docmost/db/types/entity.types';
+import { User, Workspace } from '@wiki/db/types/entity.types';
 import {
   SpaceCaslAction,
   SpaceCaslSubject,
@@ -25,11 +25,11 @@ import {
   SharePageIdDto,
   UpdateShareDto,
 } from './dto/share.dto';
-import { PageRepo } from '@docmost/db/repos/page/page.repo';
+import { PageRepo } from '@wiki/db/repos/page/page.repo';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
-import { ShareRepo } from '@docmost/db/repos/share/share.repo';
-import { PaginationOptions } from '@docmost/db/pagination/pagination-options';
+import { ShareRepo } from '@wiki/db/repos/share/share.repo';
+import { PaginationOptions } from '@wiki/db/pagination/pagination-options';
 import { EnvironmentService } from '../../integrations/environment/environment.service';
 import { hasLicenseOrEE } from '../../common/helpers';
 

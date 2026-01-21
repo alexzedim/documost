@@ -1,7 +1,7 @@
 // /ee/sso/services/ldap.service.ts
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
-import { KyselyDB } from '@docmost/db/types/kysely.types';
+import { KyselyDB } from '@wiki/db/types/kysely.types';
 // @ts-ignore
 import * as ldap from 'ldapjs';
 

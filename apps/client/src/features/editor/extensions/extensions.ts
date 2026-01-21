@@ -46,7 +46,7 @@ import {
   Heading,
   Highlight,
   UniqueID,
-} from "@docmost/editor-ext";
+} from "@wiki/editor-ext";
 import {
   randomElement,
   userColors,

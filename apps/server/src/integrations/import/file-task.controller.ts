@@ -10,16 +10,16 @@ import {
 } from '@nestjs/common';
 import SpaceAbilityFactory from '../../core/casl/abilities/space-ability.factory';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { User } from '@docmost/db/types/entity.types';
+import { User } from '@wiki/db/types/entity.types';
 import {
   SpaceCaslAction,
   SpaceCaslSubject,
 } from '../../core/casl/interfaces/space-ability.type';
 import { InjectKysely } from 'nestjs-kysely';
-import { KyselyDB } from '@docmost/db/types/kysely.types';
+import { KyselyDB } from '@wiki/db/types/kysely.types';
 import { AuthUser } from '../../common/decorators/auth-user.decorator';
 import { FileTaskIdDto } from './dto/file-task-dto';
-import { SpaceMemberRepo } from '@docmost/db/repos/space/space-member.repo';
+import { SpaceMemberRepo } from '@wiki/db/repos/space/space-member.repo';
 
 @Controller('file-tasks')
 export class FileTaskController {

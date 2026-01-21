@@ -21,7 +21,7 @@ import {
   UserMfa as _UserMFA,
   ApiKeys,
 } from './db';
-import { PageEmbeddings } from '@docmost/db/types/embeddings.types';
+import { PageEmbeddings } from '@wiki/db/types/embeddings.types';
 
 // Workspace
 export type Workspace = Selectable<Workspaces>;

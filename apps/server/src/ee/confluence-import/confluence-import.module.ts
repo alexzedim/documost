@@ -4,7 +4,7 @@ import { ConfluenceImportService } from './confluence-import.service';
 import { ImportModule } from '../../integrations/import/import.module';
 import { PageModule } from '../../core/page/page.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { DatabaseModule } from '@docmost/db/database.module';
+import { DatabaseModule } from '@wiki/db/database.module';
 
 @Module({
   imports: [

@@ -1,7 +1,7 @@
 // /ee/attachments-ee/attachment-ee.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectKysely } from 'nestjs-kysely';
-import { KyselyDB } from '@docmost/db/types/kysely.types';
+import { KyselyDB } from '@wiki/db/types/kysely.types';
 
 @Injectable()
 export class AttachmentEeService {
@@ -44,19 +44,28 @@ export class AttachmentEeService {
         .where('deletedAt', 'is', null)
         .execute();
 
-      this.logger.log(`Indexing ${attachments.length} attachments for workspace ${workspaceId}`);
+      this.logger.log(
+        `Indexing ${attachments.length} attachments for workspace ${workspaceId}`,
+      );
 
       for (const attachment of attachments) {
         try {
           await this.indexAttachment(attachment.id);
         } catch (error) {
-          this.logger.error(`Failed to index attachment ${attachment.id}, continuing...`);
+          this.logger.error(
+            `Failed to index attachment ${attachment.id}, continuing...`,
+          );
         }
       }
 
-      this.logger.log(`Completed indexing attachments for workspace ${workspaceId}`);
+      this.logger.log(
+        `Completed indexing attachments for workspace ${workspaceId}`,
+      );
     } catch (error) {
-      this.logger.error(`Failed to index attachments for workspace ${workspaceId}:`, error);
+      this.logger.error(
+        `Failed to index attachments for workspace ${workspaceId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -69,7 +78,10 @@ export class AttachmentEeService {
     return '';
   }
 
-  private async storeInSearchIndex(attachmentId: string, content: string): Promise<void> {
+  private async storeInSearchIndex(
+    attachmentId: string,
+    content: string,
+  ): Promise<void> {
     // Store in your search backend (Typesense, Elasticsearch, etc.)
     this.logger.debug(`Storing attachment ${attachmentId} in search index`);
   }

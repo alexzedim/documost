@@ -1,26 +1,26 @@
 services:
-  docmost:
-    image: docmost-test:latest
+  wiki:
+    image: wiki-test:latest
     depends_on:
       - db
       - redis
     environment:
       APP_URL: "http://localhost:3000"
       APP_SECRET: "ab4d83fbab9cd3850039d3b6a8b383dc38184efa9e8b8ee4ec61c1fc46871db3"
-      DATABASE_URL: "postgresql://docmost:docmost123@db:5432/docmost?schema=public"
+      DATABASE_URL: "postgresql://wiki:wiki123@db:5432/wiki?schema=public"
       REDIS_URL: "redis://redis:6379"
     ports:
       - "3000:3000"
     restart: unless-stopped
     volumes:
-      - docmost:/app/data/storage
+      - wiki:/app/data/storage
 
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: docmost
-      POSTGRES_USER: docmost
-      POSTGRES_PASSWORD: docmost123
+      POSTGRES_DB: wiki
+      POSTGRES_USER: wiki
+      POSTGRES_PASSWORD: wiki123
     restart: unless-stopped
     volumes:
       - db_data:/var/lib/postgresql/data
@@ -32,6 +32,6 @@ services:
       - redis_data:/data
 
 volumes:
-  docmost:
+  wiki:
   db_data:
   redis_data:

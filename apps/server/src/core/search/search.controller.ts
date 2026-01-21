@@ -17,7 +17,7 @@ import {
 } from './dto/search.dto';
 import { AuthWorkspace } from '../../common/decorators/auth-workspace.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { User, Workspace } from '@docmost/db/types/entity.types';
+import { User, Workspace } from '@wiki/db/types/entity.types';
 import SpaceAbilityFactory from '../casl/abilities/space-ability.factory';
 import {
   SpaceCaslAction,

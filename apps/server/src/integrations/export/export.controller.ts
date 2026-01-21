@@ -89,7 +89,7 @@ export class ExportController {
   
     const htmlPage = Object.assign(page, { content: html });
 
-    return page;
+    return htmlPage;
   }
 
   @UseGuards(JwtAuthGuard)

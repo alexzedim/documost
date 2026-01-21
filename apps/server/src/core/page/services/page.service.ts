@@ -207,17 +207,19 @@ export class PageService {
     return result;
   }
 
-  async getUserAccessiblePageIds(
-    spaceId: string,
-  ): Promise<{ id: string; position: string }[]> {
-    return await this.db
+  async getUserAccessiblePageIds(spaceId: string, isPrime = false): Promise<{ id: string; position: string }[]> {
+    const query = this.db
       .selectFrom('pages')
       .select(['id', 'position', 'deletedAt', 'spaceId'])
       .orderBy('position', (ob) => ob.collate('C').asc())
       .where('deletedAt', 'is', null)
-      .where('spaceId', '=', spaceId)
-      .limit(10_000)
-      .execute();
+      .where('spaceId', '=', spaceId);
+
+    if (isPrime) {
+      query.where('parentPageId', 'is', null);
+    }
+
+    return await query.limit(10_000).execute();
   }
 
   async movePageToSpace(rootPage: Page, spaceId: string) {

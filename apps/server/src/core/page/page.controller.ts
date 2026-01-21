@@ -411,7 +411,7 @@ export class PageController {
       }
 
       const pageIdsFromSpace =
-        await this.pageService.getUserAccessiblePageIds(spaceId);
+        await this.pageService.getUserAccessiblePageIds(spaceId, true);
       const pageIdsForEachSpace = pageIdsFromSpace.map((pageId) => pageId.id);
 
       pageIdsForEachSpace.forEach((id) => pageIds.add(id));

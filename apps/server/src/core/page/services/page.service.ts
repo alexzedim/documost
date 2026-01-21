@@ -1,18 +1,20 @@
-import { BadRequestException, Injectable, Logger, NotFoundException, } from '@nestjs/common';
 import { CreatePageDto } from '../dto/create-page.dto';
 import { UpdatePageDto } from '../dto/update-page.dto';
-import { GetPagesTreeDto, WikiPageType } from '../dto/page.dto';
-import { PageRepo } from '@docmost/db/repos/page/page.repo';
-import { InsertablePage, Page, User } from '@docmost/db/types/entity.types';
-import { PaginationOptions } from '@docmost/db/pagination/pagination-options';
-import { executeWithPagination, PaginationResult, } from '@docmost/db/pagination/pagination';
+import { WikiPageType } from '../dto/page.dto';
+import { PageRepo } from '@wiki/db/repos/page/page.repo';
+import { InsertablePage, Page, User } from '@wiki/db/types/entity.types';
+import { PaginationOptions } from '@wiki/db/pagination/pagination-options';
+import {
+  executeWithPagination,
+  PaginationResult,
+} from '@wiki/db/pagination/pagination';
 import { InjectKysely } from 'nestjs-kysely';
-import { KyselyDB } from '@docmost/db/types/kysely.types';
+import { KyselyDB } from '@wiki/db/types/kysely.types';
 import { generateJitteredKeyBetween } from 'fractional-indexing-jittered';
 import { MovePageDto } from '../dto/move-page.dto';
 import { generateSlugId } from '../../../common/helpers';
-import { executeTx } from '@docmost/db/utils';
-import { AttachmentRepo } from '@docmost/db/repos/attachment/attachment.repo';
+import { executeTx } from '@wiki/db/utils';
+import { AttachmentRepo } from '@wiki/db/repos/attachment/attachment.repo';
 import { v7 as uuid7 } from 'uuid';
 import {
   createYdocFromJson,
@@ -22,7 +24,10 @@ import {
   removeMarkTypeFromDoc,
 } from '../../../common/helpers/prosemirror/utils';
 import { jsonToNode, jsonToText } from 'src/collaboration/collaboration.util';
-import { CopyPageMapEntry, ICopyPageAttachment, } from '../dto/duplicate-page.dto';
+import {
+  CopyPageMapEntry,
+  ICopyPageAttachment,
+} from '../dto/duplicate-page.dto';
 import { Node as PMNode } from '@tiptap/pm/model';
 import { StorageService } from '../../../integrations/storage/storage.service';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -30,9 +35,9 @@ import { Queue } from 'bullmq';
 import { QueueJob, QueueName } from '../../../integrations/queue/constants';
 import { EventName } from '../../../common/events/event.contants';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { SpaceMemberRepo } from '@docmost/db/repos/space/space-member.repo';
-import { SpaceCaslAction, SpaceCaslSubject, } from '../../casl/interfaces/space-ability.type';
+import { SpaceMemberRepo } from '@wiki/db/repos/space/space-member.repo';
 import SpaceAbilityFactory from '../../casl/abilities/space-ability.factory';
+
 
 @Injectable()
 export class PageService {

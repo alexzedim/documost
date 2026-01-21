@@ -39,6 +39,7 @@ import { treeDataAtom } from "@/features/page/tree/atoms/tree-data-atom";
 import { SimpleTree } from "react-arborist";
 import { SpaceTreeNode } from "@/features/page/tree/types";
 import { useQueryEmit } from "@/features/websocket/use-query-emit";
+import { t } from "i18next";
 
 export function usePageQuery(
   pageInput: Partial<IPageInput>,
@@ -127,7 +128,7 @@ export function useRemovePageMutation() {
   return useMutation({
     mutationFn: (pageId: string) => deletePage(pageId, false),
     onSuccess: (_, pageId) => {
-      notifications.show({ message: "Page moved to trash" });
+      notifications.show({ message: t("Page moved to trash") });
       invalidateOnDeletePage(pageId);
       queryClient.invalidateQueries({
         predicate: (item) =>
@@ -135,7 +136,7 @@ export function useRemovePageMutation() {
       });
     },
     onError: (error) => {
-      notifications.show({ message: "Failed to delete page", color: "red" });
+      notifications.show({ message: t("Failed to delete page"), color: "red" });
     },
   });
 }

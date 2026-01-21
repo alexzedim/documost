@@ -28,7 +28,7 @@ pnpm nx run @wiki/editor-ext:build
 
 pnpm run dev
 
-_либо отдельно:_
+# либо отдельно запуск каждого
 
 pnpm run client:dev
 

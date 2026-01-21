@@ -52,7 +52,7 @@ deploy-dev:
   before_script:
     - chmod 400 "$SSH_PRIVATE_KEY_TEST"
   script:
-    - ssh -o StrictHostKeychecking=no -i "$SSH_PRIVATE_KEY_TEST" user@dpis-ai2.sigma-it.local "cd dev-stand-deploy && sed -i \"s/^\(.*BACKEND_VERSION=\).*/\1${IMAGE_TAG}/\" .env && docker compose up -d" 2>&1 | tee output.log
+    - ssh -o StrictHostKeychecking=no -i "$SSH_PRIVATE_KEY_TEST" user@dpis-ai2.sigma-it.local "cd dev-stand-deploy && sed -i \"s/^\(.*WIKI_VERSION=\).*/\1${IMAGE_TAG}/\" .env && docker compose up -d" 2>&1 | tee output.log
     - bash -c "$CHECK_DEPLOY_LOG"
   rules:
     - if: $CI_COMMIT_BRANCH == "dev"

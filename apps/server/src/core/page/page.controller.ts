@@ -7,7 +7,6 @@ import {
   HttpStatus,
   NotFoundException,
   Post,
-  Res,
   Headers,
   UseGuards,
 } from '@nestjs/common';
@@ -38,9 +37,7 @@ import { PageRepo } from '@wiki/db/repos/page/page.repo';
 import { RecentPageDto } from './dto/recent-page.dto';
 import { DuplicatePageDto } from './dto/duplicate-page.dto';
 import { DeletedPageDto } from './dto/deleted-page.dto';
-import { ExportSpaceDto } from '../../integrations/export/dto/export-dto';
 import { FastifyReply } from 'fastify';
-import { PageTreeDto } from 'src/core/page/dto/page-tree.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('pages')
@@ -400,9 +397,8 @@ export class PageController {
   @Post('tree')
   async getPagesTree(
     @AuthUser() user: User,
-    @Body() dto: PageTreeDto,
     @Headers('if-modified-since') ifModifiedSinceHeader?: string,
-    @Res() res?: FastifyReply,
+    // @Res() res?: FastifyReply,
   ) {
     const spaceIds = await this.pageService.getUserSpaceIds(user.id);
 
@@ -429,16 +425,44 @@ export class PageController {
     // Check If-Modified-Since header with latestModified, if no updates, return 304
     if (ifModifiedSinceHeader && latestModified) {
       const clientDate = new Date(ifModifiedSinceHeader);
+      console.log(
+        latestModified,
+        '<=',
+        clientDate,
+        latestModified <= clientDate,
+      );
       if (latestModified <= clientDate) {
-        res.statusCode = HttpStatus.NOT_MODIFIED;
-        res.send();
-        return;
+        // res.statusCode = HttpStatus.NOT_MODIFIED;
+        // res.send();
+        // return;
       }
     }
 
-    return this.pageService.getPagesTree(
-      pageIdsArray,
-      Boolean(dto.withContent),
-    );
+    return await this.pageService.getPagesTree(pageIdsArray);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('user-page-ids')
+  async getUserPageIds(@AuthUser() user: User) {
+    const spaceIds = await this.pageService.getUserSpaceIds(user.id);
+
+    const pageIds = new Set<string>();
+
+    for (const spaceId of spaceIds) {
+      const ability = await this.spaceAbility.createForUser(user, spaceId);
+      if (ability.cannot(SpaceCaslAction.Read, SpaceCaslSubject.Page)) {
+        continue;
+      }
+
+      const pageIdsFromSpace =
+        await this.pageService.getUserAccessiblePageIds(spaceId);
+      const pageIdsForEachSpace = pageIdsFromSpace.map((pageId) => pageId.id);
+
+      pageIdsForEachSpace.forEach((id) => pageIds.add(id));
+    }
+
+    return {
+      pageIds: Array.from(pageIds),
+    };
   }
 }

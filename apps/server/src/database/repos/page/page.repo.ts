@@ -31,6 +31,7 @@ export class PageRepo {
     'title',
     'icon',
     'coverPhoto',
+
     'position',
     'parentPageId',
     'creatorId',
@@ -490,7 +491,7 @@ export class PageRepo {
     return await query.execute();
   }
 
-  async getPagesForTree(opts: { pageIds: string[]; includeContent: boolean }) {
+  async getPagesForTree(opts: { pageIds: string[] }) {
     if (opts.pageIds.length === 0) {
       return [];
     }
@@ -508,7 +509,6 @@ export class PageRepo {
         'createdAt',
         'updatedAt',
       ])
-      .$if(opts?.includeContent, (qb) => qb.select('content'))
       .where('deletedAt', 'is', null);
 
     if (opts.pageIds) {

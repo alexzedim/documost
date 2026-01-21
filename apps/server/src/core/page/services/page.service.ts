@@ -670,13 +670,9 @@ export class PageService {
     return await this.spaceMemberRepo.getUserSpaceIds(userId);
   }
 
-  async getPagesTree(
-    pageIds: string[],
-    includeContent: boolean,
-  ): Promise<WikiPageType[]> {
+  async getPagesTree(pageIds: string[]): Promise<WikiPageType[]> {
     const pages = await this.pageRepo.getPagesForTree({
       pageIds,
-      includeContent,
     });
 
     if (pages.length === 0) {

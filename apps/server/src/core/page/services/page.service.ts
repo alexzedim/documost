@@ -659,92 +659,9 @@ export class PageService {
     return await this.spaceMemberRepo.getUserSpaceIds(userId);
   }
 
-  async getPagesTree(pageIds: string[]): Promise<WikiPageType[]> {
-    const pages = await this.pageRepo.getPagesForTree({
-      pageIds,
-    });
-
-    if (pages.length === 0) {
-      return [];
-    }
-
-    const pageMap = new Map(pages.map((page) => [page.id, page] as const));
-    const childrenMap = new Map<string | null, typeof pages>();
-
-    for (const page of pages) {
-      const parentId = page.parentPageId ?? null;
-      const children = childrenMap.get(parentId) ?? [];
-      children.push(page);
-      childrenMap.set(parentId, children);
-    }
-
-    for (const children of childrenMap.values()) {
-      children.sort((a, b) => {
-        const aPos = a.position ?? '';
-        const bPos = b.position ?? '';
-        const posCompare = aPos.localeCompare(bPos, 'en', {
-          sensitivity: 'base',
-        });
-        if (posCompare !== 0) {
-          return posCompare;
-        }
-        return (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0);
-      });
-    }
-
-    const pathCache = new Map<string, string>();
-    const buildPath = (pageId: string): string => {
-      const cached = pathCache.get(pageId);
-      if (cached) {
-        return cached;
-      }
-      const page = pageMap.get(pageId);
-      if (!page) {
-        return '';
-      }
-      const parentId = page.parentPageId;
-      const parentPath =
-        parentId && pageMap.has(parentId) ? buildPath(parentId) : '';
-
-      const isBackslash = parentPath === '' ? '' : '/';
-
-      const path = `${parentPath}${isBackslash}${page.slugId}`;
-      pathCache.set(pageId, path);
-      return path;
-    };
-
-    const buildNode = (page: (typeof pages)[number], depth: number) => {
-      const childPages = childrenMap.get(page.id) ?? [];
-      const children = childPages.map((child) => buildNode(child, depth + 1));
-      const node: WikiPageType = {
-        id: page.id,
-        title: page.title ?? 'untitled',
-        path: buildPath(page.id),
-        parent: page.parentPageId ?? null,
-        isFolder: children.length > 0,
-        isUpload: false,
-        createdAt: page.createdAt?.toISOString(),
-        updatedAt: page.updatedAt?.toISOString(),
-        depth,
-      };
-
-      if (children.length > 0) {
-        node.children = children;
-      }
-
-      return node;
-    };
-
-    const rootPages = pageIds?.length
-      ? pageIds
-          .map((pageId) => pageMap.get(pageId))
-          .filter((page): page is (typeof pages)[number] => Boolean(page))
-      : pages.filter(
-          (page) => !page.parentPageId || !pageMap.has(page.parentPageId ?? ''),
-        );
-
-    const tree = rootPages.map((page) => buildNode(page, 0));
-
-    return tree;
+  async getPagesByIds(
+    pageIds: string[],
+  ) {
+    return await this.pageRepo.getPagesByIds(pageIds);
   }
 }

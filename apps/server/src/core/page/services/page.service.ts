@@ -1,44 +1,48 @@
 import {
   BadRequestException,
-  Body,
-  Controller,
-  ForbiddenException,
-  HttpCode,
-  HttpStatus,
+  Injectable,
+  Logger,
   NotFoundException,
-  Post,
-  Headers,
-  UseGuards,
 } from '@nestjs/common';
-import { PageService } from './services/page.service';
-import { CreatePageDto } from './dto/create-page.dto';
-import { UpdatePageDto } from './dto/update-page.dto';
-import { MovePageDto, MovePageToSpaceDto } from './dto/move-page.dto';
-import {
-  DeletePageDto,
-  PageHistoryIdDto,
-  PageIdDto,
-  PageInfoDto,
-  GetPagesTreeDto,
-} from './dto/page.dto';
-import { PageHistoryService } from './services/page-history.service';
-import { AuthUser } from '../../common/decorators/auth-user.decorator';
-import { AuthWorkspace } from '../../common/decorators/auth-workspace.decorator';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { PaginationOptions } from '@wiki/db/pagination/pagination-options';
-import { User, Workspace } from '@wiki/db/types/entity.types';
-import { SidebarPageDto } from './dto/sidebar-page.dto';
-import {
-  SpaceCaslAction,
-  SpaceCaslSubject,
-} from '../casl/interfaces/space-ability.type';
-import SpaceAbilityFactory from '../casl/abilities/space-ability.factory';
+import { CreatePageDto } from '../dto/create-page.dto';
+import { UpdatePageDto } from '../dto/update-page.dto';
+import { WikiPageType } from '../dto/page.dto';
 import { PageRepo } from '@wiki/db/repos/page/page.repo';
-import { RecentPageDto } from './dto/recent-page.dto';
-import { DuplicatePageDto } from './dto/duplicate-page.dto';
-import { DeletedPageDto } from './dto/deleted-page.dto';
-import { FastifyReply } from 'fastify';
-
+import { InsertablePage, Page, User } from '@wiki/db/types/entity.types';
+import { PaginationOptions } from '@wiki/db/pagination/pagination-options';
+import {
+  executeWithPagination,
+  PaginationResult,
+} from '@wiki/db/pagination/pagination';
+import { InjectKysely } from 'nestjs-kysely';
+import { KyselyDB } from '@wiki/db/types/kysely.types';
+import { generateJitteredKeyBetween } from 'fractional-indexing-jittered';
+import { MovePageDto } from '../dto/move-page.dto';
+import { generateSlugId } from '../../../common/helpers';
+import { executeTx } from '@wiki/db/utils';
+import { AttachmentRepo } from '@wiki/db/repos/attachment/attachment.repo';
+import { v7 as uuid7 } from 'uuid';
+import {
+  createYdocFromJson,
+  getAttachmentIds,
+  getProsemirrorContent,
+  isAttachmentNode,
+  removeMarkTypeFromDoc,
+} from '../../../common/helpers/prosemirror/utils';
+import { jsonToNode, jsonToText } from 'src/collaboration/collaboration.util';
+import {
+  CopyPageMapEntry,
+  ICopyPageAttachment,
+} from '../dto/duplicate-page.dto';
+import { Node as PMNode } from '@tiptap/pm/model';
+import { StorageService } from '../../../integrations/storage/storage.service';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { QueueJob, QueueName } from '../../../integrations/queue/constants';
+import { EventName } from '../../../common/events/event.contants';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { SpaceMemberRepo } from '@wiki/db/repos/space/space-member.repo';
+import SpaceAbilityFactory from '../../casl/abilities/space-ability.factory';
 
 @Injectable()
 export class PageService {

@@ -19,7 +19,6 @@ import {
   PageHistoryIdDto,
   PageIdDto,
   PageInfoDto,
-  GetPagesTreeDto,
 } from './dto/page.dto';
 import { PageHistoryService } from './services/page-history.service';
 import { AuthUser } from '../../common/decorators/auth-user.decorator';
@@ -425,7 +424,7 @@ export class PageController {
     // Check If-Modified-Since header with latestModified, if no updates, return 304
     if (ifModifiedSinceHeader && latestModified) {
       const clientDate = new Date(ifModifiedSinceHeader);
-      console.log(latestModified, '<=', clientDate, latestModified <= clientDate)
+      console.log(latestModified, '<=', clientDate, latestModified <= clientDate);
       if (latestModified <= clientDate) {
         // res.statusCode = HttpStatus.NOT_MODIFIED;
         // res.send();
@@ -433,7 +432,7 @@ export class PageController {
       }
     }
 
-    return await this.pageService.getPagesTree(pageIdsArray);
+    return await this.pageService.getPagesByIds(pageIdsArray);
   }
 
   @HttpCode(HttpStatus.OK)

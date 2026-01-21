@@ -101,15 +101,15 @@ const groupedData: DataGroup[] = [
       { label: "Groups", icon: IconUsersGroup, path: "/settings/groups" },
       { label: "Spaces", icon: IconSpaces, path: "/settings/spaces" },
       { label: "Public sharing", icon: IconWorld, path: "/settings/sharing" },
-      {
-        label: "API management",
-        icon: IconKey,
-        path: "/settings/api-keys",
-        // isCloud: true,
-        // isEnterprise: true,
-        isAdmin: true,
-        // showDisabledInNonEE: true,
-      },
+      // {
+      //   label: "API management",
+      //   icon: IconKey,
+      //   path: "/settings/api-keys",
+      //   // isCloud: true,
+      //   // isEnterprise: true,
+      //   isAdmin: true,
+      //   // showDisabledInNonEE: true,
+      // },
       // {
       //   label: "AI settings",
       //   icon: IconSparkles,s

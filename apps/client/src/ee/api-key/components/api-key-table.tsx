@@ -41,7 +41,7 @@ export function ApiKeyTable({
           <Table.Tr>
             <Table.Th>{t("Name")}</Table.Th>
             {showUserColumn && <Table.Th>{t("User")}</Table.Th>}
-            <Table.Th>{t("Last used")}</Table.Th>
+            <Table.Th>{t("Last use")}</Table.Th>
             <Table.Th>{t("Expires")}</Table.Th>
             <Table.Th>{t("Created")}</Table.Th>
             <Table.Th></Table.Th>

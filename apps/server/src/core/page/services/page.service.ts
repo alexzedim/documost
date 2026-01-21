@@ -30,7 +30,8 @@ import { Queue } from 'bullmq';
 import { QueueJob, QueueName } from '../../../integrations/queue/constants';
 import { EventName } from '../../../common/events/event.contants';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { SpaceMemberRepo } from '@wiki/db/repos/space/space-member.repo';
+import { SpaceMemberRepo } from '@docmost/db/repos/space/space-member.repo';
+import { SpaceCaslAction, SpaceCaslSubject, } from '../../casl/interfaces/space-ability.type';
 import SpaceAbilityFactory from '../../casl/abilities/space-ability.factory';
 
 @Injectable()

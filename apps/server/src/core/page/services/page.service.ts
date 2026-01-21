@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { CreatePageDto } from '../dto/create-page.dto';
 import { UpdatePageDto } from '../dto/update-page.dto';
-import { WikiPageType } from '../dto/page.dto';
 import { PageRepo } from '@wiki/db/repos/page/page.repo';
 import { InsertablePage, Page, User } from '@wiki/db/types/entity.types';
 import { PaginationOptions } from '@wiki/db/pagination/pagination-options';

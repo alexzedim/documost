@@ -38,17 +38,3 @@ export class DeletePageDto extends PageIdDto {
   @IsBoolean()
   permanentlyDelete?: boolean;
 }
-
-export class GetPagesTreeDto {
-  @IsOptional()
-  @IsUUID()
-  spaceId?: string;
-
-  @IsOptional()
-  @IsArray()
-  pageIds?: string[];
-
-  @IsOptional()
-  @IsUUID()
-  userId?: string;
-}

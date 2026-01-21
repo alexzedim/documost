@@ -425,12 +425,7 @@ export class PageController {
     // Check If-Modified-Since header with latestModified, if no updates, return 304
     if (ifModifiedSinceHeader && latestModified) {
       const clientDate = new Date(ifModifiedSinceHeader);
-      console.log(
-        latestModified,
-        '<=',
-        clientDate,
-        latestModified <= clientDate,
-      );
+      console.log(latestModified, '<=', clientDate, latestModified <= clientDate)
       if (latestModified <= clientDate) {
         // res.statusCode = HttpStatus.NOT_MODIFIED;
         // res.send();
@@ -443,7 +438,9 @@ export class PageController {
 
   @HttpCode(HttpStatus.OK)
   @Post('user-page-ids')
-  async getUserPageIds(@AuthUser() user: User) {
+  async getUserPageIds(
+    @AuthUser() user: User,
+  ) {
     const spaceIds = await this.pageService.getUserSpaceIds(user.id);
 
     const pageIds = new Set<string>();

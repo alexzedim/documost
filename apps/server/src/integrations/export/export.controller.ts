@@ -78,7 +78,7 @@ export class ExportController {
     @AuthUser() user: User,
   ) {
     const page = await this.pageRepo.findById(dto.pageId, {
-      includeContent: true,
+      includeContent: false,
     });
 
     if (!page || page.deletedAt) {
@@ -86,11 +86,10 @@ export class ExportController {
     }
 
     const html = await this.exportService.exportPage('html', page, true);
+  
+    const htmlPage = Object.assign(page, { content: html });
 
-    return {
-      content: html,
-      ...page,
-    };
+    return page;
   }
 
   @UseGuards(JwtAuthGuard)

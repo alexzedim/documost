@@ -675,7 +675,7 @@ export class PageService {
     pageIds: string[],
   ) {
     const pages = await this.pageRepo.getPagesByIds(pageIds, true);
-    const pagesWithPath = pages.map((page) => ({ ...page, path: `/p/${page.spaceId}/s/${buildPageSlug(page.space.slug, page.title)}` }));
+    const pagesWithPath = pages.map((page) => ({ ...page, path: `/p/${page.space.slug}/s/${buildPageSlug(page.title, page.slugId)}` }));
 
     return pagesWithPath;
   }

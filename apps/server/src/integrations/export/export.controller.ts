@@ -22,6 +22,7 @@ import {
 } from '../../core/casl/interfaces/space-ability.type';
 import { FastifyReply } from 'fastify';
 import { sanitize } from 'sanitize-filename-ts';
+import { buildPageSlug } from 'src/common/helpers/utils';
 
 @Controller()
 export class ExportController {
@@ -79,15 +80,18 @@ export class ExportController {
   ) {
     const page = await this.pageRepo.findById(dto.pageId, {
       includeContent: false,
+      includeSpace: true,
     });
 
     if (!page || page.deletedAt) {
       throw new NotFoundException('Page not found');
     }
 
+    const path = `/s/${(page as any).space.slug}/p/${buildPageSlug(page.slugId, page.title)}`;
+
     const html = await this.exportService.exportPage('html', page, true);
   
-    const htmlPage = Object.assign(page, { content: html });
+    const htmlPage = Object.assign(page, { path, content: html });
 
     return htmlPage;
   }

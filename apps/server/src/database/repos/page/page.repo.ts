@@ -31,7 +31,6 @@ export class PageRepo {
     'title',
     'icon',
     'coverPhoto',
-
     'position',
     'parentPageId',
     'creatorId',
@@ -479,10 +478,11 @@ export class PageRepo {
    * @param workspaceId - Optional workspace ID to filter pages by workspace.
    * @returns Promise<Array<Page>>
    */
-  async getPagesByIds(pageIds: string[]) {
+  async getPagesByIds(pageIds: string[], withSpace = false) {
     let query = this.db
       .selectFrom('pages')
       .select(this.baseFields)
+      .select((eb) => this.withSpace(eb))
       .where('deletedAt', 'is', null)
       .where('id', 'in', pageIds);
 

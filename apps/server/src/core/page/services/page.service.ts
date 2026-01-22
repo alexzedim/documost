@@ -17,7 +17,7 @@ import { InjectKysely } from 'nestjs-kysely';
 import { KyselyDB } from '@wiki/db/types/kysely.types';
 import { generateJitteredKeyBetween } from 'fractional-indexing-jittered';
 import { MovePageDto } from '../dto/move-page.dto';
-import { generateSlugId } from '../../../common/helpers';
+import { generateSlugId, buildPageSlug } from '../../../common/helpers';
 import { executeTx } from '@wiki/db/utils';
 import { AttachmentRepo } from '@wiki/db/repos/attachment/attachment.repo';
 import { v7 as uuid7 } from 'uuid';
@@ -674,6 +674,9 @@ export class PageService {
   async getPagesByIds(
     pageIds: string[],
   ) {
-    return await this.pageRepo.getPagesByIds(pageIds);
+    const pages = await this.pageRepo.getPagesByIds(pageIds, true);
+    const pagesWithPath = pages.map((page) => ({ ...page, path: `/p/${page.spaceId}/s/${buildPageSlug(page.space.slug, page.title)}` }));
+
+    return pagesWithPath;
   }
 }

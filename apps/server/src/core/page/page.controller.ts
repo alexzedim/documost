@@ -424,7 +424,6 @@ export class PageController {
     // Check If-Modified-Since header with latestModified, if no updates, return 304
     if (ifModifiedSinceHeader && latestModified) {
       const clientDate = new Date(ifModifiedSinceHeader);
-      console.log(latestModified, '<=', clientDate, latestModified <= clientDate);
       if (latestModified <= clientDate) {
         // res.statusCode = HttpStatus.NOT_MODIFIED;
         // res.send();

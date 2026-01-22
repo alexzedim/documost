@@ -67,7 +67,7 @@ export class ExportService {
     }
 
     const pageHtml = jsonToHtml(prosemirrorJson);
-    console.log(format, ExportFormat.HTML, format === ExportFormat.HTML);
+
     if (format === ExportFormat.HTML) {
       return `<!DOCTYPE html>
       <html>

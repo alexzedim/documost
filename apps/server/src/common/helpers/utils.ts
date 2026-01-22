@@ -2,6 +2,7 @@ import * as path from 'path';
 import * as bcrypt from 'bcrypt';
 import { sanitize } from 'sanitize-filename-ts';
 import { FastifyRequest } from 'fastify';
+import * as slugify from "@sindresorhus/slugify";
 
 export const envPath = path.resolve(process.cwd(), '..', '..', '.env');
 
@@ -124,3 +125,15 @@ export function extractUsernameAndSpaceName(userName: string): {
 
   return { username, namespace };
 }
+
+
+export function buildPageSlug (pageSlugId: string, pageTitle?: string): string {
+  const titleSlug = slugify(pageTitle?.substring(0, 70) || "untitled", {
+    customReplacements: [
+      ["♥", ""],
+      ["🦄", ""],
+    ],
+  });
+
+  return `${titleSlug}-${pageSlugId}`;
+};

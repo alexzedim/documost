@@ -317,7 +317,7 @@ export class EnvironmentService {
     try {
       msUntilExpiry = ms(expiresInStr as StringValue);
     } catch (err) {
-      msUntilExpiry = ms('30m');
+      msUntilExpiry = ms('1m');
     }
     return Math.floor(msUntilExpiry / 1000);
   }

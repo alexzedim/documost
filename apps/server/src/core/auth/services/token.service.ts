@@ -15,12 +15,14 @@ import {
   JwtType,
 } from '../dto/jwt-payload';
 import { User } from '@wiki/db/types/entity.types';
+import { SessionActivityService } from './session-activity.service';
 
 @Injectable()
 export class TokenService {
   constructor(
     private jwtService: JwtService,
     private environmentService: EnvironmentService,
+    private sessionActivityService: SessionActivityService,
   ) {}
 
   async generateAccessToken(user: User): Promise<string> {
@@ -34,6 +36,9 @@ export class TokenService {
       workspaceId: user.workspaceId,
       type: JwtType.ACCESS,
     };
+
+    await this.sessionActivityService.updateActivity(user.id, user.workspaceId);
+
     return this.jwtService.sign(payload);
   }
 

@@ -24,6 +24,6 @@ import { SessionActivityService } from './services/session-activity.service';
   ],
   controllers: [AuthController],
   providers: [AuthService, SignupService, JwtStrategy, SessionActivityService],
-  exports: [SignupService],
+  exports: [SignupService, SessionActivityService],
 })
 export class AuthModule {}

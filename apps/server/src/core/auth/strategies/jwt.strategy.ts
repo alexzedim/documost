@@ -8,6 +8,7 @@ import { UserRepo } from '@wiki/db/repos/user/user.repo';
 import { FastifyRequest } from 'fastify';
 import { extractBearerTokenFromHeader } from '../../../common/helpers';
 import { ModuleRef } from '@nestjs/core';
+import { SessionActivityService } from '../services/session-activity.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -18,6 +19,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     private workspaceRepo: WorkspaceRepo,
     private readonly environmentService: EnvironmentService,
     private moduleRef: ModuleRef,
+    private sessionActivityService: SessionActivityService,
   ) {
     super({
       jwtFromRequest: (req: FastifyRequest) => {
@@ -44,6 +46,16 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
     if (payload.type.toUpperCase() !== JwtType.ACCESS.toUpperCase()) {
       throw new UnauthorizedException();
+    }
+
+    // Check session activity for ACCESS tokens only
+    const isSessionActive = await this.sessionActivityService.checkActivity(
+      payload.sub,
+      payload.workspaceId,
+    );
+
+    if (!isSessionActive) {
+      throw new UnauthorizedException('Session expired due to inactivity');
     }
 
     const workspace = await this.workspaceRepo.findById(payload.workspaceId);

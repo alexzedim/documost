@@ -10,7 +10,6 @@ import { TokenService } from './services/token.service';
         return {
           secret: environmentService.getAppSecret(),
           signOptions: {
-            // @todo remove, probably manual control this things
             expiresIn: environmentService.getJwtTokenExpiresIn(),
             issuer: 'Wiki',
           },

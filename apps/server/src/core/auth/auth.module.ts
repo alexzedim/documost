@@ -9,6 +9,7 @@ import { SignupService } from './services/signup.service';
 import { TokenModule } from './token.module';
 import { MfaModule } from '../../ee/mfa/mfa.module.js';
 import { SpaceModule } from 'src/core/space/space.module';
+import { SessionActivityService } from './services/session-activity.service';
 
 @Module({
   imports: [
@@ -22,7 +23,7 @@ import { SpaceModule } from 'src/core/space/space.module';
     MfaModule
   ],
   controllers: [AuthController],
-  providers: [AuthService, SignupService, JwtStrategy],
+  providers: [AuthService, SignupService, JwtStrategy, SessionActivityService],
   exports: [SignupService],
 })
 export class AuthModule {}

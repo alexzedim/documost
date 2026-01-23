@@ -22,6 +22,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 import { VerifyUserTokenDto } from './dto/verify-user-token.dto';
 import { FastifyRequest, FastifyReply } from 'fastify';
+import { SessionActivityService } from './services/session-activity.service';
 
 // import { ChangePasswordDto } from './dto/change-password.dto';
 // import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -35,6 +36,7 @@ export class AuthController {
   constructor(
     private authService: AuthService,
     private environmentService: EnvironmentService,
+    private sessionActivityService: SessionActivityService,
   ) {}
 
   @HttpCode(HttpStatus.OK)
@@ -135,7 +137,15 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('logout')
-  async logout(@Res({ passthrough: true }) res: FastifyReply) {
+  async logout(
+    @AuthUser() user: User,
+    @AuthWorkspace() workspace: Workspace,
+    @Res({ passthrough: true }) res: FastifyReply,
+  ) {
+    // Clear session activity from Redis
+    await this.sessionActivityService.clearActivity(user.id, workspace.id);
+
+    // Clear auth cookie
     res.clearCookie('authToken');
   }
 

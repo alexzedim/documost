@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { Agent } from 'node:https';
 import { AuthController } from './auth.controller';
@@ -11,6 +11,7 @@ import { MfaModule } from '../../ee/mfa/mfa.module.js';
 import { SpaceModule } from 'src/core/space/space.module';
 import { SessionActivityService } from './services/session-activity.service';
 
+@Global()
 @Module({
   imports: [
     HttpModule.register({

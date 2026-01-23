@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { EnvironmentService } from '../../integrations/environment/environment.service';
 import { TokenService } from './services/token.service';
+import { SessionActivityService } from './services/session-activity.service';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { TokenService } from './services/token.service';
       inject: [EnvironmentService],
     }),
   ],
-  providers: [TokenService],
-  exports: [JwtModule, TokenService],
+  providers: [TokenService, SessionActivityService],
+  exports: [JwtModule, TokenService, SessionActivityService],
 })
 export class TokenModule {}

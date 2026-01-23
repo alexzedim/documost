@@ -23,7 +23,7 @@ export class SessionActivityService {
       const key = this.getActivityKey(userId, workspaceId);
       const ttl = this.environmentService.getJwtSessionInactiveExpirationSeconds();
       const timestamp = new Date().toISOString();
-
+      console.log(key, timestamp, 'EX', ttl);
       // Set the activity timestamp with TTL
       await redisClient.set(key, timestamp, 'EX', ttl);
     } catch (error) {
@@ -47,6 +47,7 @@ export class SessionActivityService {
 
       // Check if the key exists in Redis
       const exists = await redisClient.exists(key);
+      console.log(key, exists);
       return exists === 1;
     } catch (error) {
       // Graceful degradation: log warning and allow access if Redis is unavailable

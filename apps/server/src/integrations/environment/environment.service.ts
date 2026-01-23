@@ -312,13 +312,18 @@ export class EnvironmentService {
   }
 
   getJwtSessionInactiveExpirationSeconds(): number {
-    const expiresInStr = this.configService.get<string>('JWT_SESSION_INACTIVE_EXPIRATION', '30m');
+    const expiresInStr = this.configService.get<string>(
+      'JWT_SESSION_INACTIVE_EXPIRATION',
+      '1m',
+    );
     let msUntilExpiry: number;
     try {
       msUntilExpiry = ms(expiresInStr as StringValue);
     } catch (err) {
       msUntilExpiry = ms('1m');
     }
+
+    console.log(msUntilExpiry);
     return Math.floor(msUntilExpiry / 1000);
   }
 }

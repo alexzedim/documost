@@ -11,6 +11,8 @@ export type JwtPayload = {
   sub: string;
   email: string;
   workspaceId: string;
+  sessionId: string; // Unique session identifier
+  deviceId?: string; // Device identifier (optional for fallback)
   type: 'access';
 };
 

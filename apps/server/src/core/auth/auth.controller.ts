@@ -140,10 +140,17 @@ export class AuthController {
   async logout(
     @AuthUser() user: User,
     @AuthWorkspace() workspace: Workspace,
+    @Req() req: FastifyRequest,
     @Res({ passthrough: true }) res: FastifyReply,
   ) {
-    // Clear session activity from Redis
-    await this.sessionActivityService.clearActivity(user.id, workspace.id);
+    // Clear the current session by sessionId if available
+    const sessionId = (req as any).sessionId;
+    if (sessionId) {
+      await this.sessionActivityService.clearSession(sessionId);
+    } else {
+      // Fallback for backward compatibility: clear legacy activity
+      await this.sessionActivityService.clearActivity(user.id, workspace.id);
+    }
 
     // Clear auth cookie
     res.clearCookie('authToken');

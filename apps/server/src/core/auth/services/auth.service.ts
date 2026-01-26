@@ -137,7 +137,10 @@ export class AuthService {
       user.lastLoginAt = new Date();
       await this.userRepo.updateLastLogin(user.id, workspaceId);
 
-      return this.tokenService.generateAccessToken(user);
+      // Extract device ID from request (use fingerprint as fallback)
+      const deviceId = this.extractDeviceId(req);
+
+      return this.tokenService.generateAccessToken(user, { deviceId });
     } catch (error) {
       // Record failed attempt for authentication errors
       if (error instanceof HttpException) {
@@ -155,16 +158,27 @@ export class AuthService {
     }
   }
 
-  async register(createUserDto: CreateUserDto, workspaceId: string) {
+  async register(
+    createUserDto: CreateUserDto,
+    workspaceId: string,
+    opts?: { deviceId?: string },
+  ) {
     const user = await this.signupService.signup(createUserDto, workspaceId);
-    return this.tokenService.generateAccessToken(user);
+    return this.tokenService.generateAccessToken(user, {
+      deviceId: opts?.deviceId,
+    });
   }
 
-  async setup(createAdminUserDto: CreateAdminUserDto) {
+  async setup(
+    createAdminUserDto: CreateAdminUserDto,
+    opts?: { deviceId?: string },
+  ) {
     const { workspace, user } =
       await this.signupService.initialSetup(createAdminUserDto);
 
-    const authToken = await this.tokenService.generateAccessToken(user);
+    const authToken = await this.tokenService.generateAccessToken(user, {
+      deviceId: opts?.deviceId,
+    });
     return { workspace, authToken };
   }
 
@@ -306,8 +320,6 @@ export class AuthService {
       };
     }
 
-    const authToken = await this.tokenService.generateAccessToken(user);
-    return { authToken };
   }
 
   async verifyUserToken(
@@ -444,6 +456,24 @@ export class AuthService {
 
       return undefined;
     }
+  }
+
+  /**
+   * Extract device ID from request header or generate fingerprint-based ID
+   * @param req - The Fastify request
+   * @returns string - Device ID
+   */
+  private extractDeviceId(req: FastifyRequest): string {
+    // First, try to get client-supplied device ID from header or cookie
+    const clientDeviceId =
+      (req.headers['x-device-id'] as string) || req.cookies?.['deviceId'];
+
+    if (clientDeviceId) {
+      return clientDeviceId;
+    }
+
+    // Fallback: use server-side fingerprint for backward compatibility
+    return this.generateDeviceIdentifier(req);
   }
 
   private generateDeviceIdentifier(req: FastifyRequest): string {

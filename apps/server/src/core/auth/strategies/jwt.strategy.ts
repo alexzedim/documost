@@ -48,14 +48,29 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException();
     }
 
-    // Check session activity for ACCESS tokens only
-    const isSessionActive = await this.sessionActivityService.checkActivity(
-      payload.sub,
-      payload.workspaceId,
-    );
+    // Check device-bound session for ACCESS tokens
+    const jwtPayload = payload as JwtPayload;
+    
+    if (!jwtPayload.sessionId) {
+      // Fallback for backward compatibility: check legacy activity
+      const isSessionActive = await this.sessionActivityService.checkActivity(
+        payload.sub,
+        payload.workspaceId,
+      );
+      if (!isSessionActive) {
+        throw new UnauthorizedException('Session expired due to inactivity');
+      }
+    } else {
+      // New device-bound session validation
+      const deviceId = this.extractDeviceId(req);
+      const isSessionValid = await this.sessionActivityService.checkSession(
+        jwtPayload.sessionId,
+        deviceId,
+      );
 
-    if (!isSessionActive) {
-      throw new UnauthorizedException('Session expired due to inactivity');
+      if (!isSessionValid) {
+        throw new UnauthorizedException('Session invalid or device mismatch');
+      }
     }
 
     const workspace = await this.workspaceRepo.findById(payload.workspaceId);
@@ -69,7 +84,23 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException();
     }
 
+    // Attach sessionId and deviceId to request for controller access
+    req.sessionId = jwtPayload.sessionId;
+    req.deviceId = jwtPayload.deviceId;
+
     return { user, workspace };
+  }
+
+  /**
+   * Extract device ID from request header or cookie
+   */
+  private extractDeviceId(req: any): string | undefined {
+    return (
+      req.headers?.['x-device-id'] ||
+      req.cookies?.['deviceId'] ||
+      (req.raw?.headers?.['x-device-id'] as string) ||
+      req.raw?.cookies?.['deviceId']
+    );
   }
 
   private async validateApiKey(req: any, payload: JwtApiKeyPayload) {

@@ -40,8 +40,8 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
     this.setJoinedWorkspacesCookie(user, ctx);
 
-    // Update session activity asynchronously (non-blocking)
-    this.updateSessionActivity(user);
+    // Touch session and update activity asynchronously (non-blocking)
+    this.touchSession(user, ctx);
 
     return user;
   }
@@ -76,21 +76,33 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   /**
-   * Update session activity in Redis (fire-and-forget, non-blocking)
+   * Touch session to refresh activity timestamp (fire-and-forget, non-blocking)
    * @param user - The authenticated user object
+   * @param ctx - The execution context containing the request
    */
-  private updateSessionActivity(user: any): void {
-    const userId = user?.user?.id;
-    const workspaceId = user?.workspace?.id;
+  private touchSession(user: any, ctx: ExecutionContext): void {
+    const sessionId = (ctx.switchToHttp().getRequest() as any).sessionId;
 
-    if (userId && workspaceId) {
+    if (sessionId) {
       // Fire-and-forget: don't await, don't block the request
-      this.sessionActivityService.updateActivity(userId, workspaceId).catch(
+      this.sessionActivityService.touchSession(sessionId).catch(
         (error) => {
           // Error is already logged in the service
           // This catch is just to prevent unhandled promise rejection
         },
       );
+    } else {
+      // Fallback for backward compatibility: update legacy activity
+      const userId = user?.user?.id;
+      const workspaceId = user?.workspace?.id;
+
+      if (userId && workspaceId) {
+        this.sessionActivityService.updateActivity(userId, workspaceId).catch(
+          (error) => {
+            // Error is already logged in the service
+          },
+        );
+      }
     }
   }
 }

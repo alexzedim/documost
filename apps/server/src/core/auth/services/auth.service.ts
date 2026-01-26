@@ -505,8 +505,8 @@ export class AuthService {
 
     const redisClient = this.redisService.getOrThrow();
 
-    const timeoutSeconds = this.environmentService.getLoginTimeourSeconds();
-    const maxAttempts = this.environmentService.getLoginMaxAttempts();
+    const timeoutSeconds = this.environmentService.getWikiLoginTimeoutSeconds();
+    const maxAttempts = this.environmentService.getWikiLoginMaxAttempts();
 
     // Increment attempt counter
     const attempts = await redisClient.incr(attemptsKey);

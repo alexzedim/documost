@@ -34,3 +34,7 @@ lerna-debug.log*
 .nx
 .nx/installation
 .nx/cache
+
+# Markdown files (except README.md)
+/*.md
+!README.md

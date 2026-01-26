@@ -326,4 +326,19 @@ export class EnvironmentService {
     console.log(msUntilExpiry);
     return Math.floor(msUntilExpiry / 1000);
   }
+
+  getWikiLoginMaxAttempts(): number {
+    return parseInt(this.configService.get<string>('WIKI_LOGIN_MAX_ATTEMPTS', '5'));
+  }
+
+  getWikiLoginTimeoutSeconds(): number {
+    const timeoutStr = this.configService.get<string>('WIKI_LOGIN_TIMEOUT_SECONDS', '900');
+    let msTimeout: number;
+    try {
+      msTimeout = ms(timeoutStr as StringValue);
+    } catch (err) {
+      msTimeout = ms('900s');
+    }
+    return Math.floor(msTimeout / 1000);
+  }
 }

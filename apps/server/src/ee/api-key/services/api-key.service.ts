@@ -28,12 +28,14 @@ export class ApiKeyService {
     workspaceId: string,
   ): Promise<any> {
     const userId = user.id;
+    const apiKeyId = crypto.randomUUID();
 
     const payload = {
       sub: userId,
       email: user.email,
       workspaceId,
-      type: JwtType.ACCESS,
+      apiKeyId,
+      type: JwtType.API_KEY,
     };
 
     const appSecret = this.environmentService.getAppSecret();
@@ -57,7 +59,7 @@ export class ApiKeyService {
     const userToken = await this.db
       .insertInto('userTokens')
       .values({
-        id: crypto.randomUUID(),
+        id: apiKeyId,
         token: token,
         type: 'api_key',
         userId: userId,
@@ -70,7 +72,7 @@ export class ApiKeyService {
     const apiKey = await this.db
       .insertInto('apiKeys')
       .values({
-        id: userToken.id,
+        id: apiKeyId,
         name: data.name || null,
         creatorId: userId,
         workspaceId: workspaceId,
@@ -185,8 +187,7 @@ export class ApiKeyService {
       .execute();
 
     await this.db
-      .updateTable('userTokens')
-      .set({ usedAt: new Date() })
+      .deleteFrom('userTokens')
       .where('id', '=', apiKeyId)
       .where('workspaceId', '=', workspaceId)
       .where('type', '=', 'api_key')
@@ -205,7 +206,6 @@ export class ApiKeyService {
       .where('id', '=', payload.apiKeyId)
       .where('workspaceId', '=', payload.workspaceId)
       .where('type', '=', 'api_key')
-      .where('usedAt', 'is', null)
       .executeTakeFirst();
 
     if (!userToken) {
@@ -222,7 +222,7 @@ export class ApiKeyService {
       .where('id', '=', userToken.id)
       .execute();
 
-    await this.db
+    await this.db 
       .updateTable('userTokens')
       .set({ usedAt: new Date() })
       .where('id', '=', userToken.id)

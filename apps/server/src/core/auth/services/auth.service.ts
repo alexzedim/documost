@@ -67,7 +67,7 @@ export class AuthService {
   ) {}
 
   async login(req: FastifyRequest, loginDto: LoginDto, workspaceId: string) {
-    const deviceIdentifier = this.generateDeviceIdentifier(req);
+    const deviceId = this.generateDeviceIdentifier(req);
 
     try {
       // Generate unique device identifier based on request fingerprint
@@ -78,7 +78,7 @@ export class AuthService {
       }
 
       // Check if user is locked out due to too many failed attempts (using device fingerprint)
-      await this.checkLoginLockout(deviceIdentifier);
+      await this.checkLoginLockout(deviceId);
 
       let user = await this.userRepo.findByEmail(email, workspaceId, {
         includePassword: true,
@@ -137,9 +137,6 @@ export class AuthService {
       user.lastLoginAt = new Date();
       await this.userRepo.updateLastLogin(user.id, workspaceId);
 
-      // Extract device ID from request (use fingerprint as fallback)
-      const deviceId = this.extractDeviceId(req);
-
       return this.tokenService.generateAccessToken(user, { deviceId });
     } catch (error) {
       // Record failed attempt for authentication errors
@@ -150,7 +147,7 @@ export class AuthService {
           status === HttpStatus.UNAUTHORIZED ||
           status === HttpStatus.NOT_FOUND
         ) {
-          await this.recordFailedLoginAttempt(deviceIdentifier);
+          await this.recordFailedLoginAttempt(deviceId);
         }
       }
 
@@ -456,24 +453,6 @@ export class AuthService {
 
       return undefined;
     }
-  }
-
-  /**
-   * Extract device ID from request header or generate fingerprint-based ID
-   * @param req - The Fastify request
-   * @returns string - Device ID
-   */
-  private extractDeviceId(req: FastifyRequest): string {
-    // First, try to get client-supplied device ID from header or cookie
-    const clientDeviceId =
-      (req.headers['x-device-id'] as string) || req.cookies?.['deviceId'];
-
-    if (clientDeviceId) {
-      return clientDeviceId;
-    }
-
-    // Fallback: use server-side fingerprint for backward compatibility
-    return this.generateDeviceIdentifier(req);
   }
 
   private generateDeviceIdentifier(req: FastifyRequest): string {

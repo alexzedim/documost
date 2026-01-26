@@ -62,7 +62,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       }
     } else {
       // New device-bound session validation
-      const deviceId = this.extractDeviceId(req);
+      const deviceId = this.generateDeviceId(req);
       const isSessionValid = await this.sessionActivityService.checkSession(
         jwtPayload.sessionId,
         deviceId,
@@ -92,15 +92,20 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   /**
-   * Extract device ID from request header or cookie
+   * Generate device ID from server-side fingerprint
    */
-  private extractDeviceId(req: any): string | undefined {
-    return (
-      req.headers?.['x-device-id'] ||
-      req.cookies?.['deviceId'] ||
-      (req.raw?.headers?.['x-device-id'] as string) ||
-      req.raw?.cookies?.['deviceId']
-    );
+  private generateDeviceId(req: any): string {
+    const fastifyReq = req.raw || req;
+    const ip = fastifyReq.ip || fastifyReq.socket?.remoteAddress || 'unknown';
+    const userAgent = fastifyReq.headers?.['user-agent'] || 'unknown';
+    const acceptLanguage = fastifyReq.headers?.['accept-language'] || '';
+    const acceptEncoding = fastifyReq.headers?.['accept-encoding'] || '';
+
+    const fingerprintString = `${ip}|${userAgent}|${acceptLanguage}|${acceptEncoding}`;
+    const hash = require('crypto').createHash('sha256');
+    hash.update(fingerprintString);
+
+    return hash.digest('hex');
   }
 
   private async validateApiKey(req: any, payload: JwtApiKeyPayload) {

@@ -85,7 +85,18 @@ export class SessionActivityService {
 
       const sessionData: SessionData = JSON.parse(sessionDataStr);
 
-      // If session has a deviceId and it doesn't match, session is invalid
+      // If session doesn't have a deviceId yet, bind it to the current request's device
+      if (!sessionData.deviceId && deviceId) {
+        this.logger.debug(
+          `Binding session ${sessionId} to device ${deviceId}`,
+        );
+        sessionData.deviceId = deviceId;
+        const ttl = this.environmentService.getJwtSessionInactiveExpirationSeconds();
+        await redisClient.set(sessionKey, JSON.stringify(sessionData), 'EX', ttl);
+        return true;
+      }
+
+      // If session has a deviceId and it doesn't match the incoming request, session is invalid
       if (sessionData.deviceId && sessionData.deviceId !== deviceId) {
         this.logger.warn(
           `Device mismatch for session ${sessionId}: expected ${sessionData.deviceId}, got ${deviceId}`,

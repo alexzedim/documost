@@ -36,17 +36,15 @@ export class WsGateway implements OnGatewayConnection, OnModuleDestroy {
         JwtType.ACCESS,
       );
 
-      // Validate device-bound session for new tokens
+      // Validate session exists for new tokens
       if (token.sessionId) {
-        const deviceId = this.extractDeviceId(client);
-        const isSessionValid = await this.sessionActivityService.checkSession(
+        const sessionExists = await this.sessionActivityService.checkSessionExists(
           token.sessionId,
-          deviceId,
         );
 
-        if (!isSessionValid) {
+        if (!sessionExists) {
           this.logger.warn(
-            `WebSocket connection rejected: invalid session or device mismatch for user ${token.sub}`,
+            `WebSocket connection rejected: session not found for user ${token.sub}`,
           );
           client.emit('Unauthorized');
           client.disconnect();
@@ -71,15 +69,6 @@ export class WsGateway implements OnGatewayConnection, OnModuleDestroy {
     }
   }
 
-  /**
-   * Extract device ID from WebSocket handshake
-   */
-  private extractDeviceId(client: Socket): string | undefined {
-    return (
-      client.handshake.headers['x-device-id'] as string |
-      undefined
-    ) || (client.handshake.query?.['deviceId'] as string | undefined);
-  }
 
   @SubscribeMessage('message')
   handleMessage(client: Socket, data: any): void {

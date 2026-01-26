@@ -67,12 +67,31 @@ export class SessionActivityService {
   }
 
   /**
-   * Check if a session is valid and bound to the correct device
+   * Check if a session exists (without device validation)
    * @param sessionId - The session ID
-   * @param deviceId - The device identifier to verify
-   * @returns Promise<boolean> - true if session is valid and device matches
+   * @returns Promise<boolean> - true if session exists
    */
-  async checkSession(sessionId: string, deviceId?: string): Promise<boolean> {
+  async checkSessionExists(sessionId: string): Promise<boolean> {
+    try {
+      const redisClient = this.redisService.getOrThrow();
+      const sessionKey = this.getSessionKey(sessionId);
+      const sessionDataStr = await redisClient.get(sessionKey);
+
+      return sessionDataStr !== null;
+    } catch (error) {
+      this.logger.error(
+        `Failed to check session existence ${sessionId}: ${JSON.stringify(error)}`,
+      );
+      return true; // Graceful degradation: allow access if Redis fails
+    }
+  }
+
+  /**
+   * Check if a session is valid
+   * @param sessionId - The session ID
+   * @returns Promise<boolean> - true if session is valid
+   */
+  async checkSession(sessionId: string): Promise<boolean> {
     try {
       const redisClient = this.redisService.getOrThrow();
       const sessionKey = this.getSessionKey(sessionId);
@@ -80,29 +99,6 @@ export class SessionActivityService {
 
       if (!sessionDataStr) {
         this.logger.warn(`Session ${sessionId} not found or expired`);
-        return false;
-      }
-
-      const sessionData: SessionData = JSON.parse(sessionDataStr);
-
-      // If session doesn't have a deviceId yet, bind it to the current request's device
-      if (!sessionData.deviceId && deviceId) {
-        this.logger.debug(
-          `Binding session ${sessionId} to device ${deviceId}`,
-        );
-        sessionData.deviceId = deviceId;
-        const ttl = this.environmentService.getJwtSessionInactiveExpirationSeconds();
-        await redisClient.set(sessionKey, JSON.stringify(sessionData), 'EX', ttl);
-        return true;
-      }
-
-      // If session has a deviceId and it doesn't match the incoming request, session is invalid
-      if (sessionData.deviceId && sessionData.deviceId !== deviceId) {
-        this.logger.warn(
-          `Device mismatch for session ${sessionId}: expected ${sessionData.deviceId}, got ${deviceId}`,
-        );
-        // Clear the compromised session
-        await this.clearSession(sessionId);
         return false;
       }
 

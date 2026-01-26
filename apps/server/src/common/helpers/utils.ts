@@ -136,4 +136,23 @@ export function buildPageSlug (pageSlugId: string, pageTitle?: string): string {
   });
 
   return `${titleSlug}-${pageSlugId}`;
-};
+}
+
+export function generateDeviceFingerprint(req: FastifyRequest): string {
+  const crypto = require('crypto');
+  
+  // Extract request properties
+  const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+  const userAgent = req.headers['user-agent'] || 'unknown';
+  const acceptLanguage = req.headers['accept-language'] || '';
+  const acceptEncoding = req.headers['accept-encoding'] || '';
+
+  // Create fingerprint string
+  const fingerprintString = `${ip}|${userAgent}|${acceptLanguage}|${acceptEncoding}`;
+
+  // Hash it
+  const hash = crypto.createHash('sha256');
+  hash.update(fingerprintString);
+
+  return hash.digest('hex');
+}

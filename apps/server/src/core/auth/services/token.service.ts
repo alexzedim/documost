@@ -25,19 +25,15 @@ export class TokenService {
     private sessionActivityService: SessionActivityService,
   ) {}
 
-  async generateAccessToken(
-    user: User,
-    opts?: { deviceId?: string },
-  ): Promise<string> {
+  async generateAccessToken(user: User): Promise<string> {
     if (user.deactivatedAt || user.deletedAt) {
       throw new ForbiddenException();
     }
 
-    // Create a new session bound to the device
+    // Create a new session
     const sessionId = await this.sessionActivityService.createSession(
       user.id,
       user.workspaceId,
-      opts?.deviceId,
     );
 
     const payload: JwtPayload = {
@@ -45,7 +41,6 @@ export class TokenService {
       email: user.email,
       workspaceId: user.workspaceId,
       sessionId,
-      deviceId: opts?.deviceId,
       type: JwtType.ACCESS,
     };
 

@@ -61,15 +61,13 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         throw new UnauthorizedException('Session expired due to inactivity');
       }
     } else {
-      // New device-bound session validation
-      const deviceId = this.generateDeviceId(req);
-      const isSessionValid = await this.sessionActivityService.checkSession(
+      // Validate session exists
+      const sessionExists = await this.sessionActivityService.checkSessionExists(
         jwtPayload.sessionId,
-        deviceId,
       );
 
-      if (!isSessionValid) {
-        throw new UnauthorizedException('Session invalid or device mismatch');
+      if (!sessionExists) {
+        throw new UnauthorizedException('Session expired');
       }
     }
 
@@ -84,29 +82,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException();
     }
 
-    // Attach sessionId and deviceId to request for controller access
+    // Attach sessionId to request for controller access
     req.sessionId = jwtPayload.sessionId;
-    req.deviceId = jwtPayload.deviceId;
 
     return { user, workspace };
   }
 
-  /**
-   * Generate device ID from server-side fingerprint
-   */
-  private generateDeviceId(req: any): string {
-    const fastifyReq = req.raw || req;
-    const ip = fastifyReq.ip || fastifyReq.socket?.remoteAddress || 'unknown';
-    const userAgent = fastifyReq.headers?.['user-agent'] || 'unknown';
-    const acceptLanguage = fastifyReq.headers?.['accept-language'] || '';
-    const acceptEncoding = fastifyReq.headers?.['accept-encoding'] || '';
-
-    const fingerprintString = `${ip}|${userAgent}|${acceptLanguage}|${acceptEncoding}`;
-    const hash = require('crypto').createHash('sha256');
-    hash.update(fingerprintString);
-
-    return hash.digest('hex');
-  }
 
   private async validateApiKey(req: any, payload: JwtApiKeyPayload) {
     return this.apiKeyService.validateApiKey(payload);

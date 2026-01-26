@@ -67,7 +67,7 @@ export class AuthService {
   ) {}
 
   async login(req: FastifyRequest, loginDto: LoginDto, workspaceId: string) {
-    const deviceId = this.generateDeviceIdentifier(req);
+    const deviceIdentifier = this.generateDeviceIdentifier(req);
 
     try {
       // Generate unique device identifier based on request fingerprint
@@ -78,7 +78,7 @@ export class AuthService {
       }
 
       // Check if user is locked out due to too many failed attempts (using device fingerprint)
-      await this.checkLoginLockout(deviceId);
+      await this.checkLoginLockout(deviceIdentifier);
 
       let user = await this.userRepo.findByEmail(email, workspaceId, {
         includePassword: true,
@@ -137,7 +137,7 @@ export class AuthService {
       user.lastLoginAt = new Date();
       await this.userRepo.updateLastLogin(user.id, workspaceId);
 
-      return this.tokenService.generateAccessToken(user, { deviceId });
+      return this.tokenService.generateAccessToken(user);
     } catch (error) {
       // Record failed attempt for authentication errors
       if (error instanceof HttpException) {
@@ -147,7 +147,7 @@ export class AuthService {
           status === HttpStatus.UNAUTHORIZED ||
           status === HttpStatus.NOT_FOUND
         ) {
-          await this.recordFailedLoginAttempt(deviceId);
+          await this.recordFailedLoginAttempt(deviceIdentifier);
         }
       }
 
@@ -158,24 +158,18 @@ export class AuthService {
   async register(
     createUserDto: CreateUserDto,
     workspaceId: string,
-    opts?: { deviceId?: string },
   ) {
     const user = await this.signupService.signup(createUserDto, workspaceId);
-    return this.tokenService.generateAccessToken(user, {
-      deviceId: opts?.deviceId,
-    });
+    return this.tokenService.generateAccessToken(user);
   }
 
   async setup(
     createAdminUserDto: CreateAdminUserDto,
-    opts?: { deviceId?: string },
   ) {
     const { workspace, user } =
       await this.signupService.initialSetup(createAdminUserDto);
 
-    const authToken = await this.tokenService.generateAccessToken(user, {
-      deviceId: opts?.deviceId,
-    });
+    const authToken = await this.tokenService.generateAccessToken(user);
     return { workspace, authToken };
   }
 

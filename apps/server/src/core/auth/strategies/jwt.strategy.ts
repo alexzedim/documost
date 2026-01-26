@@ -39,7 +39,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (req.raw.workspaceId && req.raw.workspaceId !== payload.workspaceId) {
       throw new UnauthorizedException('Workspace does not match');
     }
-    console.log(payload.type, JwtType.API_KEY, payload.type === JwtType.API_KEY)
+
     if (payload.type === JwtType.API_KEY) {
       return this.validateApiKey(req, payload as JwtApiKeyPayload);
     }

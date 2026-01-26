@@ -323,7 +323,7 @@ export class EnvironmentService {
       console.log(err);
       msUntilExpiry = ms('30m');
     }
-    console.log(msUntilExpiry, msUntilExpiry / 1000);
+    
     return Math.floor(msUntilExpiry / 1000);
   }
 

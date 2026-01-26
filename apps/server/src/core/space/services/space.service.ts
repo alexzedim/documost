@@ -45,6 +45,14 @@ export class SpaceService {
           trx,
         );
 
+        // await this.spaceMemberService.addUserToSpace(
+        //   systemUser.id,
+        //   space.id,
+        //   SpaceRole.ADMIN,
+        //   workspaceId,
+        //   trx,
+        // );
+
         await this.spaceMemberService.addUserToSpace(
           authUser.id,
           space.id,

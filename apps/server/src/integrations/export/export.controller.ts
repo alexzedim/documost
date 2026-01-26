@@ -79,7 +79,7 @@ export class ExportController {
     @AuthUser() user: User,
   ) {
     const page = await this.pageRepo.findById(dto.pageId, {
-      includeContent: false,
+      includeContent: true,
       includeSpace: true,
     });
 
@@ -90,7 +90,7 @@ export class ExportController {
     const path = `/s/${(page as any).space.slug}/p/${buildPageSlug(page.slugId, page.title)}`;
 
     const html = await this.exportService.exportPage('html', page, true);
-  
+
     const htmlPage = Object.assign(page, { path, content: html });
 
     return htmlPage;

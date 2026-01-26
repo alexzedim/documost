@@ -538,7 +538,7 @@ export class AuthService {
       );
 
       // Get localized error message
-      const message = 'Too many failed login attempts.';
+      const message = 'Слишком много неудачных попыток входа.';
 
       throw new HttpException(
         {

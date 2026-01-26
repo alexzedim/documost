@@ -17,7 +17,7 @@ import { SpaceRole } from '../../../common/helpers/types/permission';
 import { QueueJob, QueueName } from 'src/integrations/queue/constants';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
-import { UserRepo } from '../../user/repos/user.repo';
+import { UserRepo } from '../../../database/repos/user/user.repo';
 
 @Injectable()
 export class SpaceService {

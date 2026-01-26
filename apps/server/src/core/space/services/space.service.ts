@@ -17,6 +17,7 @@ import { SpaceRole } from '../../../common/helpers/types/permission';
 import { QueueJob, QueueName } from 'src/integrations/queue/constants';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
+import { UserRepo } from '../../user/repos/user.repo';
 
 @Injectable()
 export class SpaceService {
@@ -25,6 +26,7 @@ export class SpaceService {
     private spaceMemberService: SpaceMemberService,
     @InjectKysely() private readonly db: KyselyDB,
     @InjectQueue(QueueName.ATTACHMENT_QUEUE) private attachmentQueue: Queue,
+    private userRepo: UserRepo,
   ) {}
 
   async createSpace(
@@ -34,6 +36,10 @@ export class SpaceService {
     trx?: KyselyTransaction,
   ): Promise<Space> {
     let space = null;
+
+    const systemUser = await this.userRepo.findSystemUser(
+      workspaceId,
+    );
 
     await executeTx(
       this.db,
@@ -45,13 +51,13 @@ export class SpaceService {
           trx,
         );
 
-        // await this.spaceMemberService.addUserToSpace(
-        //   systemUser.id,
-        //   space.id,
-        //   SpaceRole.ADMIN,
-        //   workspaceId,
-        //   trx,
-        // );
+        await this.spaceMemberService.addUserToSpace(
+          systemUser.id,
+          space.id,
+          SpaceRole.ADMIN,
+          workspaceId,
+          trx,
+        );
 
         await this.spaceMemberService.addUserToSpace(
           authUser.id,

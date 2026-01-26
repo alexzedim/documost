@@ -194,6 +194,21 @@ export class UserRepo {
       .executeTakeFirst();
   }
 
+  async findSystemUser(
+    workspaceId: string,
+    trx?: KyselyTransaction,
+  ): Promise<User> {
+    const db = dbOrTx(this.db, trx);
+    return db
+      .selectFrom('users')
+      .select(this.baseFields)
+      .where('workspaceId', '=', workspaceId)
+      .where('role', '=', 'owner')
+      .orderBy('createdAt', 'asc')
+      .limit(1)
+      .executeTakeFirst();
+  }
+
   withUserMfa(eb: ExpressionBuilder<DB, 'users'>) {
     return jsonObjectFrom(
       eb

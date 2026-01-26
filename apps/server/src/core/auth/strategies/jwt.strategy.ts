@@ -7,8 +7,8 @@ import { WorkspaceRepo } from '@wiki/db/repos/workspace/workspace.repo';
 import { UserRepo } from '@wiki/db/repos/user/user.repo';
 import { FastifyRequest } from 'fastify';
 import { extractBearerTokenFromHeader } from '../../../common/helpers';
-import { ModuleRef } from '@nestjs/core';
 import { SessionActivityService } from '../services/session-activity.service';
+import { ApiKeyService } from '../../../ee/api-key/services/api-key.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -18,8 +18,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     private userRepo: UserRepo,
     private workspaceRepo: WorkspaceRepo,
     private readonly environmentService: EnvironmentService,
-    private moduleRef: ModuleRef,
     private sessionActivityService: SessionActivityService,
+    private apiKeyService: ApiKeyService,
   ) {
     super({
       jwtFromRequest: (req: FastifyRequest) => {
@@ -39,7 +39,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (req.raw.workspaceId && req.raw.workspaceId !== payload.workspaceId) {
       throw new UnauthorizedException('Workspace does not match');
     }
-
+    console.log(payload.type, JwtType.API_KEY, payload.type === JwtType.API_KEY)
     if (payload.type === JwtType.API_KEY) {
       return this.validateApiKey(req, payload as JwtApiKeyPayload);
     }
@@ -73,28 +73,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   private async validateApiKey(req: any, payload: JwtApiKeyPayload) {
-    let ApiKeyModule: any;
-    let isApiKeyModuleReady = false;
-
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      ApiKeyModule = require('./../../../ee/api-key/api-key.service');
-      isApiKeyModuleReady = true;
-    } catch (err) {
-      this.logger.debug(
-        'API Key module requested but enterprise module not bundled in this build',
-      );
-      isApiKeyModuleReady = false;
-    }
-
-    if (isApiKeyModuleReady) {
-      const ApiKeyService = this.moduleRef.get(ApiKeyModule.ApiKeyService, {
-        strict: false,
-      });
-
-      return ApiKeyService.validateApiKey(payload);
-    }
-
-    throw new UnauthorizedException('Enterprise API Key module missing');
+    return this.apiKeyService.validateApiKey(payload);
   }
 }

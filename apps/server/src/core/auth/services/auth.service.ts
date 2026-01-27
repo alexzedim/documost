@@ -460,7 +460,6 @@ export class AuthService {
 
     // Create fingerprint string with components
     const fingerprintString = `${ip}|${userAgent}|${acceptLanguage}|${acceptEncoding}`;
-
     const hash = crypto.createHash('sha256');
     hash.update(fingerprintString);
 

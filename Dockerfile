@@ -36,13 +36,13 @@ COPY --from=builder /app/patches /app/patches
 
 RUN npm install -g pnpm@10.27.0
 
+RUN mkdir -p /app/data/storage
+
 RUN chown -R node:node /app
 
 USER node
 
 RUN pnpm install --frozen-lockfile --prod
-
-RUN mkdir -p /app/data/storage
 
 VOLUME ["/app/data/storage"]
 

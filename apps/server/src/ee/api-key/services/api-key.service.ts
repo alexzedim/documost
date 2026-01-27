@@ -108,11 +108,14 @@ export class ApiKeyService {
       .execute();
 
     const userIds = [...new Set(apiKeys.map((key) => key.creatorId))];
-    const users = await this.db
-      .selectFrom('users')
-      .select(['id', 'name', 'avatarUrl'])
-      .where('id', 'in', userIds)
-      .execute();
+    const users =
+      userIds.length > 0
+        ? await this.db
+            .selectFrom('users')
+            .select(['id', 'name', 'avatarUrl'])
+            .where('id', 'in', userIds)
+            .execute()
+        : [];
 
     const userMap = new Map(users.map((user) => [user.id, user]));
 

@@ -8,6 +8,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
+import { isAxiosError } from 'axios';
 import { Agent } from 'node:https';
 import { LoginDto } from '../dto/login.dto';
 import { CreateUserDto } from '../dto/create-user.dto';

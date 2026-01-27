@@ -137,7 +137,7 @@ export class AuthService {
       user.lastLoginAt = new Date();
       await this.userRepo.updateLastLogin(user.id, workspaceId);
 
-      return this.tokenService.generateAccessToken(user);
+      return this.tokenService.generateAccessToken(user, deviceId);
     } catch (error) {
       // Record failed attempt for authentication errors
       if (error instanceof HttpException) {
@@ -158,18 +158,22 @@ export class AuthService {
   async register(
     createUserDto: CreateUserDto,
     workspaceId: string,
+    req?: FastifyRequest,
   ) {
     const user = await this.signupService.signup(createUserDto, workspaceId);
-    return this.tokenService.generateAccessToken(user);
+    const deviceId = req ? this.generateDeviceIdentifier(req) : undefined;
+    return this.tokenService.generateAccessToken(user, deviceId);
   }
 
   async setup(
     createAdminUserDto: CreateAdminUserDto,
+    req?: FastifyRequest,
   ) {
     const { workspace, user } =
       await this.signupService.initialSetup(createAdminUserDto);
 
-    const authToken = await this.tokenService.generateAccessToken(user);
+    const deviceId = req ? this.generateDeviceIdentifier(req) : undefined;
+    const authToken = await this.tokenService.generateAccessToken(user, deviceId);
     return { workspace, authToken };
   }
 

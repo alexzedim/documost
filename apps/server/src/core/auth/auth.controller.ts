@@ -59,11 +59,12 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('setup')
   async setupWorkspace(
+    @Req() req: FastifyRequest,
     @Res({ passthrough: true }) res: FastifyReply,
     @Body() createAdminUserDto: CreateAdminUserDto,
   ) {
     const { workspace, authToken } =
-      await this.authService.setup(createAdminUserDto);
+      await this.authService.setup(createAdminUserDto, req);
 
     this.setAuthCookie(res, authToken);
     return workspace;

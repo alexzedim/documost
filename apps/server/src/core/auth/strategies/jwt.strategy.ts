@@ -50,7 +50,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException();
     }
 
-    // Check device-bound session for ACCESS tokens
     const jwtPayload = payload as JwtPayload;
     
     if (!jwtPayload.sessionId) {

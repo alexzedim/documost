@@ -1,8 +1,4 @@
-import {
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { Reflector } from '@nestjs/core';
@@ -12,6 +8,7 @@ import { SessionActivityService } from '../../core/auth/services/session-activit
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
+
   constructor(
     private reflector: Reflector,
     private environmentService: EnvironmentService,
@@ -74,6 +71,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       });
     }
   }
+
 
   /**
    * Touch session to refresh activity timestamp (fire-and-forget, non-blocking)

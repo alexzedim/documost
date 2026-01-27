@@ -67,7 +67,7 @@ export class AuthService {
   ) {}
 
   async login(req: FastifyRequest, loginDto: LoginDto, workspaceId: string) {
-    const deviceIdentifier = this.generateDeviceIdentifier(req);
+    const deviceId = this.generateDeviceIdentifier(req);
 
     try {
       // Generate unique device identifier based on request fingerprint
@@ -78,7 +78,7 @@ export class AuthService {
       }
 
       // Check if user is locked out due to too many failed attempts (using device fingerprint)
-      await this.checkLoginLockout(deviceIdentifier);
+      await this.checkLoginLockout(deviceId);
 
       let user = await this.userRepo.findByEmail(email, workspaceId, {
         includePassword: true,
@@ -147,7 +147,7 @@ export class AuthService {
           status === HttpStatus.UNAUTHORIZED ||
           status === HttpStatus.NOT_FOUND
         ) {
-          await this.recordFailedLoginAttempt(deviceIdentifier);
+          await this.recordFailedLoginAttempt(deviceId);
         }
       }
 

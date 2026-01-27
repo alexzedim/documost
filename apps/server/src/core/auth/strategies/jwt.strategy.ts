@@ -9,6 +9,7 @@ import { FastifyRequest } from 'fastify';
 import { extractBearerTokenFromHeader } from '../../../common/helpers';
 import { SessionActivityService } from '../services/session-activity.service';
 import { ApiKeyService } from '../../../ee/api-key/services/api-key.service';
+import { DeviceValidatorService } from '../services/device-validator.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -20,6 +21,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     private readonly environmentService: EnvironmentService,
     private sessionActivityService: SessionActivityService,
     private apiKeyService: ApiKeyService,
+    private deviceValidatorService: DeviceValidatorService,
   ) {
     super({
       jwtFromRequest: (req: FastifyRequest) => {

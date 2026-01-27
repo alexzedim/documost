@@ -398,11 +398,21 @@ export class AuthService {
 
       return keycloakUser;
     } catch (error) {
-      this.logger.log({
-        logTag,
-        message: 'check keycloak integration',
-        error: error,
-      });
+      if (isAxiosError(error)) {
+        this.logger.error({
+          logTag,
+          message: 'Keycloak integration error',
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+        });
+      } else {
+        this.logger.log({
+          logTag,
+          message: 'Keycloak integration error',
+          error: error,
+        });
+      }
 
       return undefined;
     }

@@ -87,6 +87,30 @@ export class SessionActivityService {
   }
 
   /**
+   * Get session data by session ID
+   * @param sessionId - The session ID
+   * @returns Promise<SessionData | null>
+   */
+  async getSessionData(sessionId: string): Promise<SessionData | null> {
+    try {
+      const redisClient = this.redisService.getOrThrow();
+      const sessionKey = this.getSessionKey(sessionId);
+      const sessionDataStr = await redisClient.get(sessionKey);
+
+      if (!sessionDataStr) {
+        return null;
+      }
+
+      return JSON.parse(sessionDataStr) as SessionData;
+    } catch (error) {
+      this.logger.warn(
+        `Failed to get session data ${sessionId}: ${JSON.stringify(error)}`,
+      );
+      return null; // Graceful degradation: allow access if Redis fails
+    }
+  }
+
+  /**
    * Check if a session is valid
    * @param sessionId - The session ID
    * @returns Promise<boolean> - true if session is valid

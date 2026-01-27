@@ -71,6 +71,41 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       if (!sessionExists) {
         throw new UnauthorizedException('Session expired');
       }
+
+      // Validate device consistency for device-bound sessions
+      const sessionData = await this.sessionActivityService.getSessionData(
+        jwtPayload.sessionId,
+      );
+      const storedDeviceId = sessionData?.deviceId;
+
+      if (storedDeviceId) {
+        const currentDeviceId =
+          this.deviceValidatorService.generateDeviceIdentifier(
+            req as FastifyRequest,
+          );
+
+        if (
+          !this.deviceValidatorService.validateDeviceMatch(
+            currentDeviceId,
+            storedDeviceId,
+          )
+        ) {
+          this.deviceValidatorService.logDeviceMismatch(
+            jwtPayload.sub,
+            jwtPayload.email,
+            jwtPayload.sessionId,
+            storedDeviceId,
+            currentDeviceId,
+            req as FastifyRequest,
+          );
+
+          await this.sessionActivityService.clearSession(jwtPayload.sessionId);
+
+          throw new UnauthorizedException(
+            'Device verification failed - Session may have been hijacked',
+          );
+        }
+      }
     }
 
     const workspace = await this.workspaceRepo.findById(payload.workspaceId);

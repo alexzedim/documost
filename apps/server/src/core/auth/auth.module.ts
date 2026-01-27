@@ -10,6 +10,7 @@ import { TokenModule } from './token.module';
 import { MfaModule } from '../../ee/mfa/mfa.module.js';
 import { SpaceModule } from 'src/core/space/space.module';
 import { SessionActivityService } from './services/session-activity.service';
+import { DeviceValidatorService } from './services/device-validator.service';
 import { ApiKeyModule } from '../../ee/api-key/api-key.module';
 
 @Global()
@@ -26,7 +27,7 @@ import { ApiKeyModule } from '../../ee/api-key/api-key.module';
     ApiKeyModule
   ],
   controllers: [AuthController],
-  providers: [AuthService, SignupService, JwtStrategy, SessionActivityService],
-  exports: [SignupService, SessionActivityService],
+  providers: [AuthService, SignupService, JwtStrategy, SessionActivityService, DeviceValidatorService],
+  exports: [SignupService, SessionActivityService, DeviceValidatorService],
 })
 export class AuthModule {}

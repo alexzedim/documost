@@ -14,12 +14,14 @@ import { RemoveSpaceMemberDto } from '../dto/remove-space-member.dto';
 import { UpdateSpaceMemberRoleDto } from '../dto/update-space-member-role.dto';
 import { SpaceRole } from '../../../common/helpers/types/permission';
 import { PaginationResult } from '@wiki/db/pagination/pagination';
+import { UserRepo } from '@wiki/db/repos/user/user.repo';
 
 @Injectable()
 export class SpaceMemberService {
   constructor(
     private spaceMemberRepo: SpaceMemberRepo,
     private spaceRepo: SpaceRepo,
+    private userRepo: UserRepo,
     @InjectKysely() private readonly db: KyselyDB,
   ) {}
 
@@ -30,9 +32,18 @@ export class SpaceMemberService {
     workspaceId: string,
     trx?: KyselyTransaction,
   ): Promise<void> {
-    //if (existingSpaceUser) {
-    //           throw new BadRequestException('User already added to this space');
-    //         }
+
+    const isExistingSpaceUser = await this.spaceMemberRepo.getSpaceMemberByTypeId(
+      spaceId,
+      {
+        userId,
+      },
+    );
+
+    if (isExistingSpaceUser) {
+      throw new BadRequestException('User already added to this space');
+    }
+
     await this.spaceMemberRepo.insertSpaceMember(
       {
         userId: userId,
@@ -177,6 +188,10 @@ export class SpaceMemberService {
 
     let spaceMember: SpaceMember = null;
 
+    const systemUser = await this.userRepo.findSystemUser(
+      workspaceId,
+    );
+
     if (dto.userId) {
       spaceMember = await this.spaceMemberRepo.getSpaceMemberByTypeId(
         dto.spaceId,
@@ -199,6 +214,13 @@ export class SpaceMemberService {
 
     if (!spaceMember) {
       throw new NotFoundException('Space membership not found');
+    }
+
+    const isSystemUser = spaceMember.userId === systemUser.id;
+    if (isSystemUser) {
+      throw new BadRequestException(
+        'Вы не можете удалить системного пользователя из пространства',
+      );
     }
 
     if (spaceMember.role === SpaceRole.ADMIN) {

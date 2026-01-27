@@ -43,7 +43,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     // Touch session and update activity asynchronously (non-blocking)
     this.touchSession(user, ctx);
 
-    return user;
+    return user as any;
   }
 
   setJoinedWorkspacesCookie(user: any, ctx: ExecutionContext) {

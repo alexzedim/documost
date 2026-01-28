@@ -48,7 +48,7 @@ export default function WorkspaceMembers() {
       {/* <WorkspaceInviteSection /> */}
       {/* <Divider my="lg" /> */}
 
-      <Group justify="space-between">
+      {/* <Group justify="space-between">
         <SegmentedControl
           value={segmentValue}
           onChange={handleSegmentChange}
@@ -63,7 +63,7 @@ export default function WorkspaceMembers() {
         />
 
         {isAdmin && <WorkspaceInviteModal />}
-      </Group>
+      </Group> */}
 
       <Space h="lg" />
 

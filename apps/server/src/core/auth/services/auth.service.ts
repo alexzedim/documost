@@ -8,7 +8,6 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { isAxiosError } from 'axios';
 import { Agent } from 'node:https';
 import { LoginDto } from '../dto/login.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
@@ -84,7 +83,9 @@ export class AuthService {
       let user = await this.userRepo.findByEmail(email, workspaceId, {
         includePassword: true,
       });
-
+      console.log('login user');
+      console.log({ user });
+      console.log('==== 1.A ====');
       if (user) {
         if (user.password !== null) {
           const isPasswordMatch = await comparePasswordHash(
@@ -97,7 +98,9 @@ export class AuthService {
           }
         } else {
           const keycloakUser = await this.authKeycloakProvider(email, password);
-
+          console.log('keycloakUser user');
+          console.log({ keycloakUser });
+          console.log('==== 1.B ====');
           if (!keycloakUser) {
             throw new UnauthorizedException('Email not found');
           }
@@ -106,19 +109,33 @@ export class AuthService {
 
       if (!user) {
         const keycloakUser = await this.authKeycloakProvider(email, password);
-
+        console.log('keycloakUser user');
+        console.log({ keycloakUser });
+        console.log('==== 2.B ====');
         if (!keycloakUser) {
           throw new UnauthorizedException('Domain user not found');
         }
 
         if (!user) {
+          console.log('pre-insert user');
+          console.log({
+            id: keycloakUser.id,
+            name: keycloakUser.username,
+            email: keycloakUser.email,
+            workspaceId: workspaceId,
+          });
+          console.log('==== 2.C ====');
           user = await this.userRepo.insertUser({
             id: keycloakUser.id,
             name: keycloakUser.username,
             email: keycloakUser.email,
             workspaceId: workspaceId,
           });
-
+          console.log('after-insert user');
+          console.log({
+            user,
+          });
+          console.log('==== 2.C ====');
           const { username, namespace } = extractUsernameAndSpaceName(
             user.name,
           );
@@ -154,16 +171,6 @@ export class AuthService {
 
       throw error;
     }
-  }
-
-  async register(
-    createUserDto: CreateUserDto,
-    workspaceId: string,
-    req?: FastifyRequest,
-  ) {
-    const user = await this.signupService.signup(createUserDto, workspaceId);
-    const deviceId = req ? this.generateDeviceIdentifier(req) : undefined;
-    return this.tokenService.generateAccessToken(user, deviceId);
   }
 
   async setup(
@@ -398,21 +405,11 @@ export class AuthService {
 
       return keycloakUser;
     } catch (error) {
-      if (isAxiosError(error)) {
-        this.logger.error({
-          logTag,
-          message: 'Keycloak integration error',
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data,
-        });
-      } else {
-        this.logger.log({
-          logTag,
-          message: 'Keycloak integration error',
-          error: error,
-        });
-      }
+      this.logger.log({
+        logTag,
+        message: 'check keycloak integration',
+        error: error,
+      });
 
       return undefined;
     }

@@ -83,6 +83,8 @@ export class AuthService {
       let user = await this.userRepo.findByEmail(email, workspaceId, {
         includePassword: true,
       });
+
+      let keycloakUser;
       console.log('login user');
       console.log({ user });
       console.log('==== 1.A ====');
@@ -97,24 +99,24 @@ export class AuthService {
             throw new UnauthorizedException('Email or password does not match');
           }
         } else {
-          const keycloakUser = await this.authKeycloakProvider(email, password);
-          console.log('keycloakUser user');
-          console.log({ keycloakUser });
-          console.log('==== 1.B ====');
+          keycloakUser = await this.authKeycloakProvider(email, password);
           if (!keycloakUser) {
-            throw new UnauthorizedException('Email not found');
+            throw new UnauthorizedException('Domain user not found');
           }
         }
       }
 
       if (!user) {
-        const keycloakUser = await this.authKeycloakProvider(email, password);
-        console.log('keycloakUser user');
-        console.log({ keycloakUser });
-        console.log('==== 2.B ====');
+
+        if (!keycloakUser) {
+          keycloakUser = await this.authKeycloakProvider(email, password);
+        }
+
         if (!keycloakUser) {
           throw new UnauthorizedException('Domain user not found');
         }
+        
+        user = await this.userRepo.findById(keycloakUser.id, workspaceId);
 
         if (!user) {
           console.log('pre-insert user');
@@ -136,7 +138,8 @@ export class AuthService {
             user,
           });
           console.log('==== 2.C ====');
-          const { username, namespace } = extractUsernameAndSpaceName(
+
+          const { namespace } = extractUsernameAndSpaceName(
             user.name,
           );
 
@@ -145,6 +148,16 @@ export class AuthService {
             description: 'Ваши личное пространство',
             slug: generateSlugId(),
           });
+        }
+
+        if (user.id !== keycloakUser.id) {
+          // @todo deletect mismatch
+          console.log('deletect mismatch');
+          console.log({
+            user,
+            keycloakUser,
+          });
+          console.log('==== 3.A ====');
         }
       }
 

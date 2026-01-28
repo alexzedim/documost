@@ -456,14 +456,12 @@ export class PageRepo {
   }
 
   async getLastModifiedSinceHeader(pageIds?: string[]): Promise<Date | null> {
-    let query = this.db
+    const query = this.db
       .selectFrom('pages')
       .select((eb) => eb.fn.max('updatedAt').as('latestUpdate'))
+      .$if(opts?.includeContent, (qb) => qb.select('content'))
       .where('deletedAt', 'is', null);
-
-    if (!pageIds || (pageIds && pageIds.length > 0)) {
-      query = query.where('id', 'in', pageIds);
-    }
+      
 
     const result = await query.executeTakeFirst();
 
@@ -480,6 +478,14 @@ export class PageRepo {
    */
   async getPagesByIds(pageIds: string[], withSpace = false) {
     try {
+      if (!pageIds) {
+        return [];
+      }
+
+      if (pageIds && pageIds.length === 0) {
+        return [];
+      }
+
       let query = this.db
         .selectFrom('pages')
         .select(this.baseFields)

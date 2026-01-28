@@ -210,22 +210,26 @@ export class SpaceMemberRepo {
   }
 
   async getUserSpaceIds(userId: string): Promise<string[]> {
-    const membership = await this.db
-      .selectFrom('spaceMembers')
-      .innerJoin('spaces', 'spaces.id', 'spaceMembers.spaceId')
-      .select(['spaces.id'])
-      .where('userId', '=', userId)
-      .union(
-        this.db
-          .selectFrom('spaceMembers')
-          .innerJoin('groupUsers', 'groupUsers.groupId', 'spaceMembers.groupId')
-          .innerJoin('spaces', 'spaces.id', 'spaceMembers.spaceId')
-          .select(['spaces.id'])
-          .where('groupUsers.userId', '=', userId),
-      )
-      .execute();
+    try {
+      const membership = await this.db
+        .selectFrom('spaceMembers')
+        .innerJoin('spaces', 'spaces.id', 'spaceMembers.spaceId')
+        .select(['spaces.id'])
+        .where('userId', '=', userId)
+        .union(
+          this.db
+            .selectFrom('spaceMembers')
+            .innerJoin('groupUsers', 'groupUsers.groupId', 'spaceMembers.groupId')
+            .innerJoin('spaces', 'spaces.id', 'spaceMembers.spaceId')
+            .select(['spaces.id'])
+            .where('groupUsers.userId', '=', userId),
+        )
+        .execute();
 
-    return membership.map((space) => space.id);
+      return membership.map((space) => space.id);
+    } catch (error) {
+      console.log({ error, logTag: 'getUserSpaceIds', userId: userId })
+    }
   }
 
   async getUserSpaces(userId: string, pagination: PaginationOptions) {

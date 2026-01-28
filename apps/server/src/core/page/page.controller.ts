@@ -418,19 +418,6 @@ export class PageController {
 
     const pageIdsArray = Array.from(pageIds);
 
-    const latestModified =
-      await this.pageRepo.getLastModifiedSinceHeader(pageIdsArray);
-
-    // Check If-Modified-Since header with latestModified, if no updates, return 304
-    if (ifModifiedSinceHeader && latestModified) {
-      const clientDate = new Date(ifModifiedSinceHeader);
-      if (latestModified <= clientDate) {
-        // res.statusCode = HttpStatus.NOT_MODIFIED;
-        // res.send();
-        // return;
-      }
-    }
-
     return await this.pageService.getPagesByIds(pageIdsArray);
   }
 

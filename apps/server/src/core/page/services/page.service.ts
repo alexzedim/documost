@@ -218,18 +218,22 @@ export class PageService {
   }
 
   async getUserAccessiblePageIds(spaceId: string, isPrime = false): Promise<{ id: string; position: string }[]> {
-    const query = this.db
-      .selectFrom('pages')
-      .select(['id', 'position', 'deletedAt', 'spaceId'])
-      .orderBy('position', (ob) => ob.collate('C').asc())
-      .where('deletedAt', 'is', null)
-      .where('spaceId', '=', spaceId);
+    try {
+      const query = this.db
+        .selectFrom('pages')
+        .select(['id', 'position', 'deletedAt', 'spaceId'])
+        .orderBy('position', (ob) => ob.collate('C').asc())
+        .where('deletedAt', 'is', null)
+        .where('spaceId', '=', spaceId);
 
-    if (isPrime) {
-      query.where('parentPageId', 'is', null);
+      if (isPrime) {
+        query.where('parentPageId', 'is', null);
+      }
+
+      return await query.limit(10_000).execute();
+    } catch (error) {
+      console.log({ error, logTag: 'getUserAccessiblePageIds', spaceId: spaceId })
     }
-
-    return await query.limit(10_000).execute();
   }
 
   async movePageToSpace(rootPage: Page, spaceId: string) {

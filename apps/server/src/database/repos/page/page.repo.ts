@@ -479,16 +479,20 @@ export class PageRepo {
    * @returns Promise<Array<Page>>
    */
   async getPagesByIds(pageIds: string[], withSpace = false) {
-    let query = this.db
-      .selectFrom('pages')
-      .select(this.baseFields)
-      .select((eb) => this.withSpace(eb))
-      .where('deletedAt', 'is', null)
-      .where('id', 'in', pageIds);
+    try {
+      let query = this.db
+        .selectFrom('pages')
+        .select(this.baseFields)
+        .select((eb) => this.withSpace(eb))
+        .where('deletedAt', 'is', null)
+        .where('id', 'in', pageIds);
 
-    query = query.orderBy('createdAt', 'desc');
+      query = query.orderBy('createdAt', 'desc');
 
-    return await query.execute();
+      return await query.execute();
+    } catch (error) {
+      console.log({ logTag: 'getPagesByIds', pageIds, error })
+    }
   }
 
   async getPagesForTree(opts: { pageIds: string[] }) {

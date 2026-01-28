@@ -455,11 +455,10 @@ export class PageRepo {
       .execute();
   }
 
-  async getLastModifiedSinceHeader(pageIds?: string[]): Promise<Date | null> {
+  async getLastModifiedSinceHeader(): Promise<Date | null> {
     const query = this.db
       .selectFrom('pages')
       .select((eb) => eb.fn.max('updatedAt').as('latestUpdate'))
-      .$if(opts?.includeContent, (qb) => qb.select('content'))
       .where('deletedAt', 'is', null);
       
 

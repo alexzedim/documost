@@ -45,6 +45,7 @@ import { FastifyRequest } from 'fastify';
 import * as crypto from 'crypto';
 import { RedisService } from '@nestjs-labs/nestjs-ioredis';
 import { SpaceService } from 'src/core/space/services/space.service';
+import { UserRole } from 'src/common/helpers/types/permission';
 
 @Injectable()
 export class AuthService {
@@ -198,6 +199,7 @@ export class AuthService {
       name: keycloakUser.username,
       email: keycloakUser.email,
       workspaceId: workspaceId,
+      role: UserRole.MEMBER,
     });
 
     // Create default personal space for new user

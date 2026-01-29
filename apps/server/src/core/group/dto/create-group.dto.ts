@@ -28,6 +28,6 @@ export class CreateGroupDto {
 }
 
 export enum DefaultGroup {
-  EVERYONE = 'Everyone',
-  DESCRIPTION = 'Group for all users in this workspace.',
+  EVERYONE = 'Все',
+  DESCRIPTION = 'Группа для всех пользователей',
 }

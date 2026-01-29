@@ -101,11 +101,13 @@ export class SpaceController {
     @AuthWorkspace() workspace: Workspace,
   ) {
     const ability = this.workspaceAbility.createForUser(user, workspace);
-    if (
-      ability.cannot(WorkspaceCaslAction.Manage, WorkspaceCaslSubject.Space)
-    ) {
+
+    const isAbilityToCreate = ability.can(WorkspaceCaslAction.Create, WorkspaceCaslSubject.Space) || ability.can(WorkspaceCaslAction.Manage, WorkspaceCaslSubject.Space);
+
+    if (!isAbilityToCreate) {
       throw new ForbiddenException();
     }
+
     return this.spaceService.createSpace(user, workspace.id, createSpaceDto);
   }
 

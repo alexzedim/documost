@@ -9,7 +9,6 @@ import { useTranslation } from "react-i18next";
 
 export default function Spaces() {
   const { t } = useTranslation();
-  const { isAdmin } = useUserRole();
 
   return (
     <>
@@ -21,7 +20,7 @@ export default function Spaces() {
       <SettingsTitle title={t("Spaces")} />
 
       <Group my="md" justify="flex-end">
-        {isAdmin && <CreateSpaceModal />}
+        <CreateSpaceModal />
       </Group>
 
       <SpaceList />

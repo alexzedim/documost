@@ -46,6 +46,8 @@ import * as crypto from 'crypto';
 import { RedisService } from '@nestjs-labs/nestjs-ioredis';
 import { SpaceService } from 'src/core/space/services/space.service';
 import { UserRole } from 'src/common/helpers/types/permission';
+import { GroupUserRepo } from '@wiki/db/repos/group/group-user.repo';
+import { GroupRepo } from '@wiki/db/repos/group/group.repo';
 
 @Injectable()
 export class AuthService {
@@ -58,6 +60,8 @@ export class AuthService {
     private spaceService: SpaceService,
     private tokenService: TokenService,
     private userRepo: UserRepo,
+    private groupUserRepo: GroupUserRepo,
+    private groupRepo: GroupRepo,
     private userTokenRepo: UserTokenRepo,
     private mailService: MailService,
     private domainService: DomainService,
@@ -201,6 +205,15 @@ export class AuthService {
       workspaceId: workspaceId,
       role: UserRole.MEMBER,
     });
+
+    const defaultEveryoneGroup = await this.groupRepo.getDefaultGroup(workspaceId);
+
+    if (defaultEveryoneGroup) {
+      await this.groupUserRepo.insertGroupUser({
+          userId: user.id,
+          groupId: defaultEveryoneGroup.id,
+        })
+    }
 
     // Create default personal space for new user
     const { namespace } = extractUsernameAndSpaceName(user.name);

@@ -70,102 +70,19 @@ export class AuthService {
     const deviceId = this.generateDeviceIdentifier(req);
 
     try {
-      // Generate unique device identifier based on request fingerprint
       const { email, password } = loginDto;
-
-      if (!email || !password) {
-        throw new BadRequestException('Email and password are required');
-      }
 
       // Check if user is locked out due to too many failed attempts (using device fingerprint)
       await this.checkLoginLockout(deviceId);
 
-      let user = await this.userRepo.findByEmail(email, workspaceId, {
-        includePassword: true,
-      });
+      // Attempt to authenticate user (local or Keycloak)
+      const user = await this.authenticateUser(email, password, workspaceId);
 
-      let keycloakUser;
-      console.log('login user');
-      console.log({ user });
-      console.log('==== 1.A ====');
-      if (user) {
-        if (user.password !== null) {
-          const isPasswordMatch = await comparePasswordHash(
-            loginDto.password,
-            user.password,
-          );
-
-          if (!isPasswordMatch) {
-            throw new UnauthorizedException('Email or password does not match');
-          }
-        } else {
-          keycloakUser = await this.authKeycloakProvider(email, password);
-          if (!keycloakUser) {
-            throw new UnauthorizedException('Domain user not found');
-          }
-        }
-      }
-
-      if (!user) {
-
-        if (!keycloakUser) {
-          keycloakUser = await this.authKeycloakProvider(email, password);
-        }
-
-        if (!keycloakUser) {
-          throw new UnauthorizedException('Domain user not found');
-        }
-        
-        user = await this.userRepo.findById(keycloakUser.id, workspaceId);
-
-        if (!user) {
-          console.log('pre-insert user');
-          console.log({
-            id: keycloakUser.id,
-            name: keycloakUser.username,
-            email: keycloakUser.email,
-            workspaceId: workspaceId,
-          });
-          console.log('==== 2.C ====');
-          user = await this.userRepo.insertUser({
-            id: keycloakUser.id,
-            name: keycloakUser.username,
-            email: keycloakUser.email,
-            workspaceId: workspaceId,
-          });
-          console.log('after-insert user');
-          console.log({
-            user,
-          });
-          console.log('==== 2.C ====');
-
-          const { namespace } = extractUsernameAndSpaceName(
-            user.name,
-          );
-
-          await this.spaceService.createSpace(user, workspaceId, {
-            name: namespace,
-            description: 'Ваши личное пространство',
-            slug: generateSlugId(),
-          });
-        }
-
-        if (user.id !== keycloakUser.id) {
-          // @todo deletect mismatch
-          console.log('deletect mismatch');
-          console.log({
-            user,
-            keycloakUser,
-          });
-          console.log('==== 3.A ====');
-        }
-      }
-
-      if (!user || user?.deletedAt) {
+      if (!user || user.deletedAt) {
         throw new UnauthorizedException('User not found');
       }
 
-      user.lastLoginAt = new Date();
+      // Update last login timestamp
       await this.userRepo.updateLastLogin(user.id, workspaceId);
 
       return this.tokenService.generateAccessToken(user, deviceId);
@@ -184,6 +101,124 @@ export class AuthService {
 
       throw error;
     }
+  }
+
+  /**
+   * Authenticate user with email and password
+   * Supports both local password authentication and Keycloak SSO
+   * @param email - User email
+   * @param password - User password
+   * @param workspaceId - Workspace ID
+   * @returns Authenticated user or throws UnauthorizedException
+   */
+  private async authenticateUser(
+    email: string,
+    password: string,
+    workspaceId: string,
+  ): Promise<User> {
+    // Try to find existing local user
+    let user = await this.userRepo.findByEmail(email, workspaceId, {
+      includePassword: true,
+    });
+
+    // If local user exists, validate password
+    if (user) {
+      return this.validateLocalUserPassword(user, password);
+    }
+
+    // If no local user, try Keycloak authentication
+    const keycloakUser = await this.authKeycloakProvider(email, password);
+    if (!keycloakUser) {
+      throw new UnauthorizedException('Email or password does not match');
+    }
+
+    // Try to find user by Keycloak ID
+    user = await this.userRepo.findById(keycloakUser.id, workspaceId);
+
+    // If user doesn't exist, create new user from Keycloak data
+    if (!user) {
+      user = await this.createUserFromKeycloak(keycloakUser, workspaceId);
+    } else if (user.id !== keycloakUser.id) {
+      // Log mismatch for debugging
+      this.logger.warn({
+        message: 'User ID mismatch detected between local and Keycloak user',
+        localUserId: user.id,
+        keycloakUserId: keycloakUser.id,
+        localUserEmail: user.email,
+        keycloakUserEmail: keycloakUser.email,
+      });
+    }
+
+    return user;
+  }
+
+  /**
+   * Validate local user password
+   * @param user - User entity with password hash
+   * @param password - Plain text password to validate
+   * @returns User if password matches
+   * @throws UnauthorizedException if password doesn't match or user has no password
+   */
+  private async validateLocalUserPassword(
+    user: User,
+    password: string,
+  ): Promise<User> {
+    // If user has no password, they must use Keycloak
+    if (user.password === null) {
+      throw new UnauthorizedException(
+        'This account uses domain authentication. Please use your domain credentials.',
+      );
+    }
+
+    const isPasswordMatch = await comparePasswordHash(password, user.password);
+
+    if (!isPasswordMatch) {
+      throw new UnauthorizedException('Email or password does not match');
+    }
+
+    return user;
+  }
+
+  /**
+   * Create a new user from Keycloak authentication data
+   * Initializes user with default personal space
+   * @param keycloakUser - Keycloak user data
+   * @param workspaceId - Workspace ID
+   * @returns Created user entity
+   */
+  private async createUserFromKeycloak(
+    keycloakUser: KeycloakAuthUser,
+    workspaceId: string,
+  ): Promise<User> {
+    this.logger.debug({
+      message: 'Creating new user from Keycloak',
+      keycloakUserId: keycloakUser.id,
+      email: keycloakUser.email,
+    });
+
+    const user = await this.userRepo.insertUser({
+      id: keycloakUser.id,
+      name: keycloakUser.username,
+      email: keycloakUser.email,
+      workspaceId: workspaceId,
+    });
+
+    // Create default personal space for new user
+    const { namespace } = extractUsernameAndSpaceName(user.name);
+
+    await this.spaceService.createSpace(user, workspaceId, {
+      name: namespace,
+      description: 'Ваши личное пространство',
+      slug: generateSlugId(),
+    });
+
+    this.logger.debug({
+      message: 'User created successfully from Keycloak',
+      userId: user.id,
+      email: user.email,
+    });
+
+    return user;
   }
 
   async setup(

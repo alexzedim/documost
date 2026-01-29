@@ -157,9 +157,14 @@ export class AuthService {
   ): Promise<User> {
     // If user has no password, they must use Keycloak
     if (user.password === null) {
-      throw new UnauthorizedException(
-        'This account uses domain authentication. Please use your domain credentials.',
-      );
+      // Try Keycloak authentication for users without local password
+      const keycloakUser = await this.authKeycloakProvider(user.email, password);
+      if (!keycloakUser) {
+        throw new UnauthorizedException(
+          'This account uses domain authentication. Please use your domain credentials.',
+        );
+      }
+      return user;
     }
 
     const isPasswordMatch = await comparePasswordHash(password, user.password);

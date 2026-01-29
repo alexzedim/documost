@@ -99,7 +99,7 @@ export class ApiKeyService {
     };
   }
 
-  async getApiKeys(workspaceId: string, params?: any): Promise<any> {
+  async getApiKeys(user: User, workspaceId: string, params?: any): Promise<any> {
     const apiKeys = await this.db
       .selectFrom('apiKeys')
       .selectAll()

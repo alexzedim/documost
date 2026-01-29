@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -15,6 +16,7 @@ import { UpdateSpaceMemberRoleDto } from '../dto/update-space-member-role.dto';
 import { SpaceRole } from '../../../common/helpers/types/permission';
 import { PaginationResult } from '@wiki/db/pagination/pagination';
 import { UserRepo } from '@wiki/db/repos/user/user.repo';
+import { ForbiddenError } from '@casl/ability';
 
 @Injectable()
 export class SpaceMemberService {
@@ -245,6 +247,15 @@ export class SpaceMemberService {
     let spaceMember: SpaceMember = null;
 
     if (dto.userId) {
+      const systemUser = await this.userRepo.findSystemUser(
+        workspaceId,
+      );
+
+      const isSystemUser = dto.userId === systemUser.id;
+      if (isSystemUser) {
+        throw new ForbiddenException('Вы не можете изменить права системного пользователя в пространстве');
+      }
+
       spaceMember = await this.spaceMemberRepo.getSpaceMemberByTypeId(
         dto.spaceId,
         {

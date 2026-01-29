@@ -99,13 +99,32 @@ export class ApiKeyService {
     };
   }
 
-  async getApiKeys(user: User, workspaceId: string, params?: any): Promise<any> {
-    const apiKeys = await this.db
+  private async findSystemUser(workspaceId: string): Promise<User | undefined> {
+    return this.db
+      .selectFrom('users')
+      .selectAll()
+      .where('workspaceId', '=', workspaceId)
+      .where('role', '=', 'owner')
+      .orderBy('createdAt', 'asc')
+      .limit(1)
+      .executeTakeFirst();
+  }
+
+  async getApiKeys(user: User, workspaceId: string): Promise<any> {
+    const systemUser = await this.findSystemUser(workspaceId);
+    const isSystemUser = systemUser && user.id === systemUser.id;
+
+    let query = this.db
       .selectFrom('apiKeys')
       .selectAll()
       .where('workspaceId', '=', workspaceId)
-      .where('deletedAt', 'is', null)
-      .execute();
+      .where('deletedAt', 'is', null);
+
+    if (!isSystemUser) {
+      query = query.where('creatorId', '=', user.id);
+    }
+
+    const apiKeys = await query.execute();
 
     const userIds = [...new Set(apiKeys.map((key) => key.creatorId))];
     const users =

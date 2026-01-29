@@ -23,9 +23,8 @@ export class ApiKeyController {
   async getApiKeys(
     @AuthUser() user: User,
     @AuthWorkspace() workspace: Workspace,
-    @Body() params?: any,
   ) {
-    return this.apiKeyService.getApiKeys(user, workspace.id, params);
+    return this.apiKeyService.getApiKeys(user, workspace.id);
   }
 
   @HttpCode(HttpStatus.OK)

@@ -41,6 +41,8 @@ export class SpaceService {
       workspaceId,
     );
 
+    const isSystemUser = authUser.id === systemUser.id;
+
     await executeTx(
       this.db,
       async (trx) => {
@@ -51,13 +53,15 @@ export class SpaceService {
           trx,
         );
 
-        await this.spaceMemberService.addUserToSpace(
-          systemUser.id,
-          space.id,
-          SpaceRole.ADMIN,
-          workspaceId,
-          trx,
-        );
+        if (!isSystemUser) {
+          await this.spaceMemberService.addUserToSpace(
+            systemUser.id,
+            space.id,
+            SpaceRole.ADMIN,
+            workspaceId,
+            trx,
+          );
+        }
 
         await this.spaceMemberService.addUserToSpace(
           authUser.id,

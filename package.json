@@ -1,6 +1,6 @@
 {
   "name": "wiki",
-  "version": "1.0.24",
+  "version": "1.0.25",
   "private": true,
   "scripts": {
     "build": "nx run-many -t build",

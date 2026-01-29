@@ -189,97 +189,97 @@ export class WorkspaceController {
     );
   }
 
-  @HttpCode(HttpStatus.OK)
-  @Post('invites/create')
-  async inviteUser(
-    @Body() inviteUserDto: InviteUserDto,
-    @AuthUser() user: User,
-    @AuthWorkspace() workspace: Workspace,
-  ) {
-    const ability = this.workspaceAbility.createForUser(user, workspace);
-    if (
-      ability.cannot(WorkspaceCaslAction.Manage, WorkspaceCaslSubject.Member)
-    ) {
-      throw new ForbiddenException();
-    }
+  // @HttpCode(HttpStatus.OK)
+  // @Post('invites/create')
+  // async inviteUser(
+  //   @Body() inviteUserDto: InviteUserDto,
+  //   @AuthUser() user: User,
+  //   @AuthWorkspace() workspace: Workspace,
+  // ) {
+  //   const ability = this.workspaceAbility.createForUser(user, workspace);
+  //   if (
+  //     ability.cannot(WorkspaceCaslAction.Manage, WorkspaceCaslSubject.Member)
+  //   ) {
+  //     throw new ForbiddenException();
+  //   }
 
-    return this.workspaceInvitationService.createInvitation(
-      inviteUserDto,
-      workspace,
-      user,
-    );
-  }
+  //   return this.workspaceInvitationService.createInvitation(
+  //     inviteUserDto,
+  //     workspace,
+  //     user,
+  //   );
+  // }
 
-  @HttpCode(HttpStatus.OK)
-  @Post('invites/resend')
-  async resendInvite(
-    @Body() revokeInviteDto: RevokeInviteDto,
-    @AuthUser() user: User,
-    @AuthWorkspace() workspace: Workspace,
-  ) {
-    const ability = this.workspaceAbility.createForUser(user, workspace);
-    if (
-      ability.cannot(WorkspaceCaslAction.Manage, WorkspaceCaslSubject.Member)
-    ) {
-      throw new ForbiddenException();
-    }
+  // @HttpCode(HttpStatus.OK)
+  // @Post('invites/resend')
+  // async resendInvite(
+  //   @Body() revokeInviteDto: RevokeInviteDto,
+  //   @AuthUser() user: User,
+  //   @AuthWorkspace() workspace: Workspace,
+  // ) {
+  //   const ability = this.workspaceAbility.createForUser(user, workspace);
+  //   if (
+  //     ability.cannot(WorkspaceCaslAction.Manage, WorkspaceCaslSubject.Member)
+  //   ) {
+  //     throw new ForbiddenException();
+  //   }
 
-    return this.workspaceInvitationService.resendInvitation(
-      revokeInviteDto.invitationId,
-      workspace,
-    );
-  }
+  //   return this.workspaceInvitationService.resendInvitation(
+  //     revokeInviteDto.invitationId,
+  //     workspace,
+  //   );
+  // }
 
-  @HttpCode(HttpStatus.OK)
-  @Post('invites/revoke')
-  async revokeInvite(
-    @Body() revokeInviteDto: RevokeInviteDto,
-    @AuthUser() user: User,
-    @AuthWorkspace() workspace: Workspace,
-  ) {
-    const ability = this.workspaceAbility.createForUser(user, workspace);
-    if (
-      ability.cannot(WorkspaceCaslAction.Manage, WorkspaceCaslSubject.Member)
-    ) {
-      throw new ForbiddenException();
-    }
+  // @HttpCode(HttpStatus.OK)
+  // @Post('invites/revoke')
+  // async revokeInvite(
+  //   @Body() revokeInviteDto: RevokeInviteDto,
+  //   @AuthUser() user: User,
+  //   @AuthWorkspace() workspace: Workspace,
+  // ) {
+  //   const ability = this.workspaceAbility.createForUser(user, workspace);
+  //   if (
+  //     ability.cannot(WorkspaceCaslAction.Manage, WorkspaceCaslSubject.Member)
+  //   ) {
+  //     throw new ForbiddenException();
+  //   }
 
-    return this.workspaceInvitationService.revokeInvitation(
-      revokeInviteDto.invitationId,
-      workspace.id,
-    );
-  }
+  //   return this.workspaceInvitationService.revokeInvitation(
+  //     revokeInviteDto.invitationId,
+  //     workspace.id,
+  //   );
+  // }
 
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @Post('invites/accept')
-  async acceptInvite(
-    @Body() acceptInviteDto: AcceptInviteDto,
-    @AuthWorkspace() workspace: Workspace,
-    @Res({ passthrough: true }) res: FastifyReply,
-  ) {
-    const result = await this.workspaceInvitationService.acceptInvitation(
-      acceptInviteDto,
-      workspace,
-    );
+  // @Public()
+  // @HttpCode(HttpStatus.OK)
+  // @Post('invites/accept')
+  // async acceptInvite(
+  //   @Body() acceptInviteDto: AcceptInviteDto,
+  //   @AuthWorkspace() workspace: Workspace,
+  //   @Res({ passthrough: true }) res: FastifyReply,
+  // ) {
+  //   const result = await this.workspaceInvitationService.acceptInvitation(
+  //     acceptInviteDto,
+  //     workspace,
+  //   );
 
-    if (result.requiresLogin) {
-      return {
-        requiresLogin: true,
-      };
-    }
+  //   if (result.requiresLogin) {
+  //     return {
+  //       requiresLogin: true,
+  //     };
+  //   }
 
-    res.setCookie('authToken', result.authToken, {
-      httpOnly: true,
-      path: '/',
-      expires: this.environmentService.getCookieExpiresIn(),
-      secure: this.environmentService.isHttps(),
-    });
+  //   res.setCookie('authToken', result.authToken, {
+  //     httpOnly: true,
+  //     path: '/',
+  //     expires: this.environmentService.getCookieExpiresIn(),
+  //     secure: this.environmentService.isHttps(),
+  //   });
 
-    return {
-      requiresLogin: false,
-    };
-  }
+  //   return {
+  //     requiresLogin: false,
+  //   };
+  // }
 
   @Public()
   @HttpCode(HttpStatus.OK)
@@ -288,29 +288,29 @@ export class WorkspaceController {
     return this.workspaceService.checkHostname(checkHostnameDto.hostname);
   }
 
-  @HttpCode(HttpStatus.OK)
-  @Post('invites/link')
-  async getInviteLink(
-    @Body() inviteDto: InvitationIdDto,
-    @AuthUser() user: User,
-    @AuthWorkspace() workspace: Workspace,
-  ) {
-    if (this.environmentService.isCloud()) {
-      throw new ForbiddenException();
-    }
+  // @HttpCode(HttpStatus.OK)
+  // @Post('invites/link')
+  // async getInviteLink(
+  //   @Body() inviteDto: InvitationIdDto,
+  //   @AuthUser() user: User,
+  //   @AuthWorkspace() workspace: Workspace,
+  // ) {
+  //   if (this.environmentService.isCloud()) {
+  //     throw new ForbiddenException();
+  //   }
 
-    const ability = this.workspaceAbility.createForUser(user, workspace);
-    if (
-      ability.cannot(WorkspaceCaslAction.Manage, WorkspaceCaslSubject.Member)
-    ) {
-      throw new ForbiddenException();
-    }
-    const inviteLink =
-      await this.workspaceInvitationService.getInvitationLinkById(
-        inviteDto.invitationId,
-        workspace,
-      );
+  //   const ability = this.workspaceAbility.createForUser(user, workspace);
+  //   if (
+  //     ability.cannot(WorkspaceCaslAction.Manage, WorkspaceCaslSubject.Member)
+  //   ) {
+  //     throw new ForbiddenException();
+  //   }
+  //   const inviteLink =
+  //     await this.workspaceInvitationService.getInvitationLinkById(
+  //       inviteDto.invitationId,
+  //       workspace,
+  //     );
 
-    return { inviteLink };
-  }
+  //   return { inviteLink };
+  // }
 }

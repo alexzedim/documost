@@ -10,14 +10,12 @@ import {
 import { HttpService } from '@nestjs/axios';
 import { Agent } from 'node:https';
 import { LoginDto } from '../dto/login.dto';
-import { CreateUserDto } from '../dto/create-user.dto';
 import { TokenService } from './token.service';
 import { SignupService } from './signup.service';
 import { CreateAdminUserDto } from '../dto/create-admin-user.dto';
 import { UserRepo } from '@wiki/db/repos/user/user.repo';
 import {
   comparePasswordHash,
-  extractBearerTokenFromHeader,
   generateSlugId,
   hashPassword,
   nanoIdGen,
@@ -138,15 +136,9 @@ export class AuthService {
     // If user doesn't exist, create new user from Keycloak data
     if (!user) {
       user = await this.createUserFromKeycloak(keycloakUser, workspaceId);
-    } else if (user.id !== keycloakUser.id) {
-      // Log mismatch for debugging
-      this.logger.warn({
-        message: 'User ID mismatch detected between local and Keycloak user',
-        localUserId: user.id,
-        keycloakUserId: keycloakUser.id,
-        localUserEmail: user.email,
-        keycloakUserEmail: keycloakUser.email,
-      });
+    } else {
+      // Validate user ID consistency between local and Keycloak
+      this.validateUserIdConsistency(user, keycloakUser);
     }
 
     return user;
@@ -219,6 +211,27 @@ export class AuthService {
     });
 
     return user;
+  }
+
+  /**
+   * Validate user ID consistency between local and Keycloak records
+   * Logs warning if IDs don't match, indicating potential data inconsistency
+   * @param localUser - Local user entity
+   * @param keycloakUser - Keycloak user data
+   */
+  private validateUserIdConsistency(
+    localUser: User,
+    keycloakUser: KeycloakAuthUser,
+  ): void {
+    if (localUser.id !== keycloakUser.id) {
+      this.logger.warn({
+        message: 'User ID mismatch detected between local and Keycloak user',
+        localUserId: localUser.id,
+        keycloakUserId: keycloakUser.id,
+        localUserEmail: localUser.email,
+        keycloakUserEmail: keycloakUser.email,
+      });
+    }
   }
 
   async setup(

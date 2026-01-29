@@ -210,9 +210,9 @@ export class AuthService {
 
     if (defaultEveryoneGroup) {
       await this.groupUserRepo.insertGroupUser({
-          userId: user.id,
-          groupId: defaultEveryoneGroup.id,
-        })
+        userId: user.id,
+        groupId: defaultEveryoneGroup.id,
+      });
     }
 
     // Create default personal space for new user

@@ -74,7 +74,7 @@ export class GroupRepo {
 
   async getDefaultGroup(
     workspaceId: string,
-    trx: KyselyTransaction,
+    trx?: KyselyTransaction,
   ): Promise<Group> {
     const db = dbOrTx(this.db, trx);
     return (

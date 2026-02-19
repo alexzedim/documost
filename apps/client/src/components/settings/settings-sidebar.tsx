@@ -77,18 +77,18 @@ const groupedData: DataGroup[] = [
     heading: "Workspace",
     items: [
       { label: "General", icon: IconSettings, path: "/settings/workspace" },
-      {
-        label: "Members",
-        icon: IconUsers,
-        path: "/settings/members",
-      },
-      {
-        label: "Billing",
-        icon: IconCoin,
-        path: "/settings/billing",
-        isCloud: true,
-        isAdmin: true,
-      },
+      // {
+      //   label: "Members",
+      //   icon: IconUsers,
+      //   path: "/settings/members",
+      // },
+      // {
+      //   label: "Billing",
+      //   icon: IconCoin,
+      //   path: "/settings/billing",
+      //   isCloud: true,
+      //   isAdmin: true,
+      // },
       // {
       //   label: "Security & SSO",
       //   icon: IconLock,
@@ -199,18 +199,18 @@ export default function SettingsSidebar() {
 
           let prefetchHandler: any;
           switch (item.label) {
-            case "Members":
-              prefetchHandler = prefetchWorkspaceMembers;
-              break;
+            // case "Members":
+            //   prefetchHandler = prefetchWorkspaceMembers;
+            //   break;
             case "Spaces":
               prefetchHandler = prefetchSpaces;
               break;
             case "Groups":
               prefetchHandler = prefetchGroups;
               break;
-            case "Billing":
-              prefetchHandler = prefetchBilling;
-              break;
+            // case "Billing":
+            //   prefetchHandler = prefetchBilling;
+            //   break;
             case "License & Edition":
               if (workspace?.hasLicenseKey) {
                 prefetchHandler = prefetchLicense;

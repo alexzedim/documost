@@ -70,13 +70,13 @@ export default function TopMenu() {
           {t("Workspace settings")}
         </Menu.Item>
 
-        <Menu.Item
+        {/* <Menu.Item
           component={Link}
           to={APP_ROUTE.SETTINGS.WORKSPACE.MEMBERS}
           leftSection={<IconUsers size={16} />}
         >
           {t("Manage members")}
-        </Menu.Item>
+        </Menu.Item> */}
 
         <Menu.Divider />
 

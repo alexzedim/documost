@@ -59,7 +59,7 @@ export default function WorkspaceMembersTable() {
           <Table.Thead>
             <Table.Tr>
               <Table.Th>{t("User")}</Table.Th>
-              <Table.Th>{t("Status")}</Table.Th>
+              {/* <Table.Th>{t("Status")}</Table.Th> */}
               <Table.Th>{t("Role")}</Table.Th>
             </Table.Tr>
           </Table.Thead>
@@ -84,9 +84,9 @@ export default function WorkspaceMembersTable() {
                       </div>
                     </Group>
                   </Table.Td>
-                  <Table.Td>
+                  {/* <Table.Td>
                     <Badge variant="light">{t("Active")}</Badge>
-                  </Table.Td>
+                  </Table.Td> */}
                   <Table.Td>
                     <RoleSelectMenu
                       roles={assignableUserRoles}
@@ -94,7 +94,7 @@ export default function WorkspaceMembersTable() {
                       onChange={(newRole) =>
                         handleRoleChange(user.id, user.role, newRole)
                       }
-                      disabled={!isAdmin}
+                      disabled={true}
                     />
                   </Table.Td>
                   <Table.Td>

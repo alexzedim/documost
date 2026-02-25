@@ -93,14 +93,14 @@ export default function App() {
           />
 
           <Route path={"/settings"}>
-            <Route path={"account/profile"} element={<AccountSettings />} />
+            {/* <Route path={"account/profile"} element={<AccountSettings />} /> */}
             <Route
               path={"account/preferences"}
               element={<AccountPreferences />}
             />
             <Route path={"account/api-keys"} element={<UserApiKeys />} />
             <Route path={"workspace"} element={<WorkspaceSettings />} />
-            {/* <Route path={"members"} element={<WorkspaceMembers />} /> */}
+            <Route path={"members"} element={<WorkspaceMembers />} />
             <Route path={"api-keys"} element={<WorkspaceApiKeys />} />
             <Route path={"groups"} element={<Groups />} />
             <Route path={"groups/:groupId"} element={<GroupInfo />} />

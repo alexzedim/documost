@@ -81,7 +81,7 @@ export default function TopMenu() {
         <Menu.Divider />
 
         <Menu.Label>{t("Account")}</Menu.Label>
-        <Menu.Item component={Link} to={APP_ROUTE.SETTINGS.ACCOUNT.PROFILE}>
+        <Menu.Item component={Link} to={APP_ROUTE.SETTINGS.ACCOUNT.PREFERENCES}>
           <Group wrap={"nowrap"}>
             <CustomAvatar
               size={"sm"}
@@ -99,23 +99,23 @@ export default function TopMenu() {
             </div>
           </Group>
         </Menu.Item>
-        <Menu.Item
+        {/* <Menu.Item
           component={Link}
           to={APP_ROUTE.SETTINGS.ACCOUNT.PROFILE}
           leftSection={<IconUserCircle size={16} />}
         >
           {t("My profile")}
-        </Menu.Item>
+        </Menu.Item> */}
 
-        <Menu.Item
+        {/* <Menu.Item
           component={Link}
           to={APP_ROUTE.SETTINGS.ACCOUNT.PREFERENCES}
           leftSection={<IconBrush size={16} />}
         >
           {t("My preferences")}
-        </Menu.Item>
+        </Menu.Item> */}
 
-        <Menu.Sub>
+        {/* <Menu.Sub>
           <Menu.Sub.Target>
             <Menu.Sub.Item leftSection={<IconBrightnessFilled size={16} />}>
               {t("Theme")}
@@ -151,7 +151,7 @@ export default function TopMenu() {
               {t("System settings")}
             </Menu.Item>
           </Menu.Sub.Dropdown>
-        </Menu.Sub>
+        </Menu.Sub> */}
 
         <Menu.Divider />
 

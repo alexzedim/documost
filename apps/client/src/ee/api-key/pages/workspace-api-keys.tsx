@@ -1,9 +1,7 @@
 import React, { useState } from "react";
 import { Button, Group, Space, Text } from "@mantine/core";
-import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import SettingsTitle from "@/components/settings/settings-title";
-import { getAppName } from "@/lib/config";
 import { ApiKeyTable } from "@/ee/api-key/components/api-key-table";
 import { CreateApiKeyModal } from "@/ee/api-key/components/create-api-key-modal";
 import { ApiKeyCreatedModal } from "@/ee/api-key/components/api-key-created-modal";
@@ -13,7 +11,7 @@ import Paginate from "@/components/common/paginate";
 import { usePaginateAndSearch } from "@/hooks/use-paginate-and-search";
 import { useGetApiKeysQuery } from "@/ee/api-key/queries/api-key-query.ts";
 import { IApiKey } from "@/ee/api-key";
-import useUserRole from '@/hooks/use-user-role.tsx';
+import useUserRole from "@/hooks/use-user-role.tsx";
 
 export default function WorkspaceApiKeys() {
   const { t } = useTranslation();
@@ -46,12 +44,6 @@ export default function WorkspaceApiKeys() {
 
   return (
     <>
-      <Helmet>
-        <title>
-          {t("API management")} - {getAppName()}
-        </title>
-      </Helmet>
-
       <SettingsTitle title={t("API management")} />
 
       <Text size="md" c="dimmed" mb="md">

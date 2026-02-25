@@ -21,7 +21,7 @@ export default function WorkspaceNameForm() {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [workspace, setWorkspace] = useAtom(workspaceAtom);
-  const { isAdmin } = useUserRole();
+  const { isOwner } = useUserRole();
 
   const form = useForm<FormValues>({
     validate: zodResolver(formSchema),
@@ -54,11 +54,11 @@ export default function WorkspaceNameForm() {
         label={t("Name")}
         placeholder={t("e.g ACME")}
         variant="filled"
-        readOnly={!isAdmin}
+        readOnly={!isOwner}
         {...form.getInputProps("name")}
       />
 
-      {isAdmin && (
+      {isOwner && (
         <Button
           mt="sm"
           type="submit"

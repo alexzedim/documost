@@ -1,6 +1,7 @@
 import { Group, Table, Text, Badge, Menu, ActionIcon } from "@mantine/core";
 import {
   useGroupMembersQuery,
+  useGroupQuery,
   useRemoveGroupMemberMutation,
 } from "@/features/group/queries/group-query";
 import { useParams } from "react-router-dom";
@@ -12,14 +13,19 @@ import useUserRole from "@/hooks/use-user-role.tsx";
 import { useTranslation } from "react-i18next";
 import { IUser } from "@/features/user/types/user.types.ts";
 import Paginate from "@/components/common/paginate.tsx";
+import { useAtom } from "jotai";
+import { currentUserAtom } from "@/features/user/atoms/current-user-atom.ts";
 
 export default function GroupMembersList() {
   const { t } = useTranslation();
   const { groupId } = useParams();
   const [page, setPage] = useState(1);
+  const { data: group } = useGroupQuery(groupId);
   const { data, isLoading } = useGroupMembersQuery(groupId, { page });
   const removeGroupMember = useRemoveGroupMemberMutation();
-  const { isAdmin } = useUserRole();
+  const { isOwner, isAdmin } = useUserRole();
+  const [currentUser] = useAtom(currentUserAtom);
+  const userInfo = currentUser?.user;
 
   const onRemove = async (userId: string) => {
     const memberToRemove = {
@@ -77,27 +83,28 @@ export default function GroupMembersList() {
                   <Badge variant="light">{t("Active")}</Badge>
                 </Table.Td>
                 <Table.Td>
-                  {isAdmin && (
-                    <Menu
-                      shadow="xl"
-                      position="bottom-end"
-                      offset={20}
-                      width={200}
-                      withArrow
-                      arrowPosition="center"
-                    >
-                      <Menu.Target>
-                        <ActionIcon variant="subtle" c="gray">
-                          <IconDots size={20} stroke={2} />
-                        </ActionIcon>
-                      </Menu.Target>
-                      <Menu.Dropdown>
-                        <Menu.Item onClick={() => openRemoveModal(user.id)}>
-                          {t("Remove group member")}
-                        </Menu.Item>
-                      </Menu.Dropdown>
-                    </Menu>
-                  )}
+                  {(isOwner || userInfo.id === group.creatorId) &&
+                    !group.isDefault && (
+                      <Menu
+                        shadow="xl"
+                        position="bottom-end"
+                        offset={20}
+                        width={200}
+                        withArrow
+                        arrowPosition="center"
+                      >
+                        <Menu.Target>
+                          <ActionIcon variant="subtle" c="gray">
+                            <IconDots size={20} stroke={2} />
+                          </ActionIcon>
+                        </Menu.Target>
+                        <Menu.Dropdown>
+                          <Menu.Item onClick={() => openRemoveModal(user.id)}>
+                            {t("Remove group member")}
+                          </Menu.Item>
+                        </Menu.Dropdown>
+                      </Menu>
+                    )}
                 </Table.Td>
               </Table.Tr>
             ))}

@@ -1,9 +1,7 @@
 import React, { useState } from "react";
 import { Button, Group, Space } from "@mantine/core";
-import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import SettingsTitle from "@/components/settings/settings-title";
-import { getAppName } from "@/lib/config";
 import { ApiKeyTable } from "@/ee/api-key/components/api-key-table";
 import { CreateApiKeyModal } from "@/ee/api-key/components/create-api-key-modal";
 import { ApiKeyCreatedModal } from "@/ee/api-key/components/api-key-created-modal";
@@ -40,12 +38,6 @@ export default function UserApiKeys() {
 
   return (
     <>
-      <Helmet>
-        <title>
-          {t("API keys")} - {getAppName()}
-        </title>
-      </Helmet>
-
       <SettingsTitle title={t("API keys")} />
 
       <Group justify="flex-end" mb="md">

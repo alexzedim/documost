@@ -2,7 +2,6 @@ import { useParams } from "react-router-dom";
 import { usePageQuery } from "@/features/page/queries/page-query";
 import { FullEditor } from "@/features/editor/full-editor";
 import HistoryModal from "@/features/page-history/components/history-modal";
-import { Helmet } from "react-helmet-async";
 import PageHeader from "@/features/page/components/header/page-header.tsx";
 import { extractPageSlugId } from "@/lib";
 import { useGetSpaceBySlugQuery } from "@/features/space/queries/space-query.ts";
@@ -51,10 +50,6 @@ export default function Page() {
   return (
     page && (
       <div>
-        <Helmet>
-          <title>{`${page?.icon || ""}  ${page?.title || t("untitled")}`}</title>
-        </Helmet>
-
         <MemoizedPageHeader
           readOnly={spaceAbility.cannot(
             SpaceCaslAction.Manage,

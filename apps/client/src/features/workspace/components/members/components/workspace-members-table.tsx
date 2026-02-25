@@ -28,7 +28,7 @@ export default function WorkspaceMembersTable() {
     query: search,
   });
   const changeMemberRoleMutation = useChangeMemberRoleMutation();
-  const { isAdmin, isOwner } = useUserRole();
+  const { isOwner } = useUserRole();
 
   const assignableUserRoles = isOwner
     ? userRoleData
@@ -94,11 +94,11 @@ export default function WorkspaceMembersTable() {
                       onChange={(newRole) =>
                         handleRoleChange(user.id, user.role, newRole)
                       }
-                      disabled={true}
+                      disabled={!isOwner}
                     />
                   </Table.Td>
                   <Table.Td>
-                    {isAdmin && <MemberActionMenu userId={user.id} />}
+                    {isOwner && <MemberActionMenu userId={user.id} />}
                   </Table.Td>
                 </Table.Tr>
               ))

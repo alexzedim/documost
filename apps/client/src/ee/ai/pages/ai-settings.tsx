@@ -1,5 +1,3 @@
-import { Helmet } from "react-helmet-async";
-import { getAppName } from "@/lib/config.ts";
 import SettingsTitle from "@/components/settings/settings-title.tsx";
 import useUserRole from "@/hooks/use-user-role.tsx";
 import { useTranslation } from "react-i18next";
@@ -15,9 +13,6 @@ export default function AiSettings() {
 
   return (
     <>
-      <Helmet>
-        <title>AI - {getAppName()}</title>
-      </Helmet>
       <SettingsTitle title={t("AI settings")} />
       <EnableAiSearch />
     </>

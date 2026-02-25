@@ -15,7 +15,7 @@ export default function WorkspaceIcon() {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [workspace, setWorkspace] = useAtom(workspaceAtom);
-  const { isAdmin } = useUserRole();
+  const { isOwner } = useUserRole();
 
   const handleIconUpload = async (file: File) => {
     setIsLoading(true);
@@ -60,7 +60,7 @@ export default function WorkspaceIcon() {
         onUpload={handleIconUpload}
         onRemove={handleIconRemove}
         isLoading={isLoading}
-        disabled={!isAdmin}
+        disabled={!isOwner}
       />
     </div>
   );

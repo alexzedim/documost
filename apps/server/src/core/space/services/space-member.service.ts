@@ -34,13 +34,10 @@ export class SpaceMemberService {
     workspaceId: string,
     trx?: KyselyTransaction,
   ): Promise<void> {
-
-    const isExistingSpaceUser = await this.spaceMemberRepo.getSpaceMemberByTypeId(
-      spaceId,
-      {
+    const isExistingSpaceUser =
+      await this.spaceMemberRepo.getSpaceMemberByTypeId(spaceId, {
         userId,
-      },
-    );
+      });
 
     if (isExistingSpaceUser) {
       throw new BadRequestException('User already added to this space');
@@ -190,9 +187,7 @@ export class SpaceMemberService {
 
     let spaceMember: SpaceMember = null;
 
-    const systemUser = await this.userRepo.findSystemUser(
-      workspaceId,
-    );
+    const systemUser = await this.userRepo.findSystemUser(workspaceId);
 
     if (dto.userId) {
       spaceMember = await this.spaceMemberRepo.getSpaceMemberByTypeId(
@@ -247,13 +242,13 @@ export class SpaceMemberService {
     let spaceMember: SpaceMember = null;
 
     if (dto.userId) {
-      const systemUser = await this.userRepo.findSystemUser(
-        workspaceId,
-      );
+      const systemUser = await this.userRepo.findSystemUser(workspaceId);
 
       const isSystemUser = dto.userId === systemUser.id;
       if (isSystemUser) {
-        throw new ForbiddenException('Вы не можете изменить права системного пользователя в пространстве');
+        throw new ForbiddenException(
+          'Вы не можете изменить права системного пользователя в пространстве',
+        );
       }
 
       spaceMember = await this.spaceMemberRepo.getSpaceMemberByTypeId(

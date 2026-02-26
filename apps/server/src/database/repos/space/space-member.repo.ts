@@ -102,19 +102,32 @@ export class SpaceMemberRepo {
       .selectFrom('spaceMembers')
       .leftJoin('users', 'users.id', 'spaceMembers.userId')
       .leftJoin('groups', 'groups.id', 'spaceMembers.groupId')
+      .leftJoin('spaces', (join) => join.on('spaces.id', '=', spaceId))
       .select([
         'users.id as userId',
         'users.name as userName',
         'users.avatarUrl as userAvatarUrl',
         'users.email as userEmail',
+        'users.role as userWorkspaceRole',
         'groups.id as groupId',
         'groups.name as groupName',
         'groups.isDefault as groupIsDefault',
-        'spaceMembers.role',
+        'spaceMembers.role as spaceRole',
         'spaceMembers.createdAt',
+        'spaces.creatorId as spaceCreatorId',
       ])
       .select((eb) => this.groupRepo.withMemberCount(eb))
       .where('spaceId', '=', spaceId)
+      .where((eb) =>
+        eb.or([
+          eb('users.id', 'is', null),
+          eb('users.role', '!=', 'owner'),
+          eb.and([
+            eb('users.role', '=', 'owner'),
+            eb('users.id', '=', eb.ref('spaces.creatorId')),
+          ]),
+        ]),
+      )
       .orderBy((eb) => eb('groups.id', 'is not', null), 'desc')
       .orderBy('spaceMembers.createdAt', 'asc');
 
@@ -166,7 +179,7 @@ export class SpaceMemberRepo {
 
       return {
         ...memberInfo,
-        role: member.role,
+        role: member.spaceRole,
         createdAt: member.createdAt,
       };
     });
@@ -219,7 +232,11 @@ export class SpaceMemberRepo {
         .union(
           this.db
             .selectFrom('spaceMembers')
-            .innerJoin('groupUsers', 'groupUsers.groupId', 'spaceMembers.groupId')
+            .innerJoin(
+              'groupUsers',
+              'groupUsers.groupId',
+              'spaceMembers.groupId',
+            )
             .innerJoin('spaces', 'spaces.id', 'spaceMembers.spaceId')
             .select(['spaces.id'])
             .where('groupUsers.userId', '=', userId),
@@ -228,7 +245,7 @@ export class SpaceMemberRepo {
 
       return membership.map((space) => space.id);
     } catch (error) {
-      console.log({ error, logTag: 'getUserSpaceIds', userId: userId })
+      console.log({ error, logTag: 'getUserSpaceIds', userId: userId });
     }
   }
 
@@ -238,7 +255,21 @@ export class SpaceMemberRepo {
     let query = this.db
       .selectFrom('spaces')
       .selectAll()
-      .select((eb) => [this.spaceRepo.withMemberCount(eb)])
+      .select((eb) => [
+        sql<number>`(
+        SELECT CASE 
+          WHEN EXISTS (
+            SELECT 1 FROM users 
+            WHERE users.id = spaces.creator_id 
+            AND users.role = 'owner'
+          ) THEN COUNT(*)
+          WHEN COUNT(*) = 1 THEN 1 
+          ELSE COUNT(*) - 1 
+        END
+        FROM space_members
+        WHERE space_members.space_id = spaces.id
+      )`.as('memberCount'),
+      ])
       //.where('workspaceId', '=', workspaceId)
       .where('id', 'in', userSpaceIds)
       .orderBy('createdAt', 'asc');

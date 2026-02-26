@@ -163,7 +163,10 @@ export class AuthService {
     // If user has no password, they must use Keycloak
     if (user.password === null) {
       // Try Keycloak authentication for users without local password
-      const keycloakUser = await this.authKeycloakProvider(user.email, password);
+      const keycloakUser = await this.authKeycloakProvider(
+        user.email,
+        password,
+      );
       if (!keycloakUser) {
         throw new UnauthorizedException(
           'This account uses domain authentication. Please use your domain credentials.',
@@ -203,10 +206,11 @@ export class AuthService {
       name: keycloakUser.username,
       email: keycloakUser.email,
       workspaceId: workspaceId,
-      role: UserRole.MEMBER,
+      role: UserRole.ADMIN,
     });
 
-    const defaultEveryoneGroup = await this.groupRepo.getDefaultGroup(workspaceId);
+    const defaultEveryoneGroup =
+      await this.groupRepo.getDefaultGroup(workspaceId);
 
     if (defaultEveryoneGroup) {
       await this.groupUserRepo.insertGroupUser({
@@ -254,15 +258,15 @@ export class AuthService {
     }
   }
 
-  async setup(
-    createAdminUserDto: CreateAdminUserDto,
-    req?: FastifyRequest,
-  ) {
+  async setup(createAdminUserDto: CreateAdminUserDto, req?: FastifyRequest) {
     const { workspace, user } =
       await this.signupService.initialSetup(createAdminUserDto);
 
     const deviceId = req ? this.generateDeviceIdentifier(req) : undefined;
-    const authToken = await this.tokenService.generateAccessToken(user, deviceId);
+    const authToken = await this.tokenService.generateAccessToken(
+      user,
+      deviceId,
+    );
     return { workspace, authToken };
   }
 
@@ -403,7 +407,6 @@ export class AuthService {
         requiresLogin: true,
       };
     }
-
   }
 
   async verifyUserToken(

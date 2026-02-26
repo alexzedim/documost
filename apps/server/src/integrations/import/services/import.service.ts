@@ -29,6 +29,7 @@ import * as mammoth from 'mammoth';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import * as https from 'https';
+import { AttachmentService } from '../../../core/attachment/services/attachment.service';
 
 @Injectable()
 export class ImportService {
@@ -42,6 +43,7 @@ export class ImportService {
     @InjectKysely() private readonly db: KyselyDB,
     @InjectQueue(QueueName.FILE_TASK_QUEUE)
     private readonly fileTaskQueue: Queue,
+    private readonly attachmentService: AttachmentService,
   ) {}
 
   async importPage(
@@ -67,38 +69,15 @@ export class ImportService {
       } else if (fileExtension.endsWith('.html')) {
         prosemirrorState = await this.processHTML(fileContent);
       } else if (['.doc', '.docx', '.rtf'].includes(fileExtension)) {
-        prosemirrorState = await this.processWordDocument(
-          fileBuffer,
-          file.filename,
-        );
-      }
-    } catch (err) {
-      const message = 'Error processing file content';
-      this.logger.error(message, err);
-      throw new BadRequestException(message);
-    }
-
-    if (!prosemirrorState) {
-      const message = 'Failed to create ProseMirror state';
-      this.logger.error(message);
-      throw new BadRequestException(message);
-    }
-
-    const { title, prosemirrorJson } =
-      this.extractTitleAndRemoveHeading(prosemirrorState);
-
-    const pageTitle = title || fileName;
-
-    if (prosemirrorJson) {
-      try {
         const pagePosition = await this.getNewPagePosition(spaceId);
+        const tempTitle = fileName || 'Untitled';
 
         createdPage = await this.pageRepo.insertPage({
           slugId: generateSlugId(),
-          title: pageTitle,
-          content: prosemirrorJson,
-          textContent: jsonToText(prosemirrorJson),
-          ydoc: await this.createYdoc(prosemirrorJson),
+          title: tempTitle,
+          content: { type: 'doc', content: [] },
+          textContent: '',
+          ydoc: null,
           position: pagePosition,
           spaceId: spaceId,
           creatorId: userId,
@@ -106,22 +85,96 @@ export class ImportService {
           lastUpdatedById: userId,
         });
 
-        this.logger.debug(
-          `Successfully imported "${title}${fileExtension}. ID: ${createdPage.id} - SlugId: ${createdPage.slugId}"`,
+        prosemirrorState = await this.processWordDocument(
+          fileBuffer,
+          file.filename,
+          createdPage.id,
+          spaceId,
+          workspaceId,
+          userId,
         );
-      } catch (err) {
-        const message = 'Failed to create imported page';
-        this.logger.error(message, err);
-        throw new BadRequestException(message);
+
+        if (prosemirrorState) {
+          const { title, prosemirrorJson } =
+            this.extractTitleAndRemoveHeading(prosemirrorState);
+
+          const pageTitle = title || fileName;
+
+          await this.db
+            .updateTable('pages')
+            .set({
+              title: pageTitle,
+              content: prosemirrorJson,
+              textContent: jsonToText(prosemirrorJson),
+              ydoc: await this.createYdoc(prosemirrorJson),
+            })
+            .where('id', '=', createdPage.id)
+            .execute();
+        }
       }
+    } catch (err) {
+      const message = 'Error processing file content';
+      this.logger.error(message, err);
+      throw new BadRequestException(message);
     }
+
+    if (!prosemirrorState && !createdPage) {
+      const message = 'Failed to create ProseMirror state';
+      this.logger.error(message);
+      throw new BadRequestException(message);
+    }
+
+    this.logger.debug(
+      `Successfully imported "${fileName}${fileExtension}. ID: ${createdPage?.id}"`,
+    );
 
     return createdPage;
   }
 
-  async processWordDocument(
+  private getMimeType(extension: string): string {
+    const mimeTypes: Record<string, string> = {
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.bmp': 'image/bmp',
+      '.svg': 'image/svg+xml',
+      '.webp': 'image/webp',
+      '.tiff': 'image/tiff',
+      '.ico': 'image/x-icon',
+    };
+
+    return mimeTypes[extension.toLowerCase()] || 'application/octet-stream';
+  }
+
+  private createFakeMultipartFile(
+    buffer: Buffer,
+    filename: string,
+    mimetype: string,
+  ): MultipartFile {
+    return {
+      filename,
+      mimetype,
+      encoding: '7bit',
+      fieldname: 'file',
+      type: 'file',
+      toBuffer: async () => buffer,
+      file: {
+        path: '',
+        bytesRead: buffer.length,
+        truncated: false,
+      } as any,
+      fields: {},
+    };
+  }
+
+  private async processWordDocument(
     fileBuffer: Buffer,
     filename: string,
+    pageId?: string,
+    spaceId?: string,
+    workspaceId?: string,
+    userId?: string,
   ): Promise<any> {
     try {
       const fileExtension = path.extname(filename).toLowerCase();
@@ -133,12 +186,88 @@ export class ImportService {
         docxBuffer = converted.buffer;
       }
 
-      const html = await this.convertDocxToHtml(docxBuffer);
+      const { html, images } = await this.convertDocxToHtml(docxBuffer);
 
-      return this.processHTML(html);
+      let processedHtml = html;
+
+      if (images.size > 0 && pageId && workspaceId && userId) {
+        processedHtml = await this.processDocxImages(
+          images,
+          pageId,
+          spaceId,
+          workspaceId,
+          userId,
+          html,
+        );
+      }
+
+      return this.processHTML(processedHtml);
     } catch (error) {
       this.logger.error(`Error processing Word document: ${error}`);
       throw new Error(`Failed to process Word document: ${error}`);
+    }
+  }
+
+  private async processDocxImages(
+    images: Map<string, Buffer>,
+    pageId: string,
+    spaceId: string,
+    workspaceId: string,
+    userId: string,
+    html: string,
+  ): Promise<string> {
+    try {
+      this.logger.debug(`Found ${images.size} images in DOCX`);
+
+      const attachmentMap = new Map<string, string>();
+
+      for (const [imageName, imageBuffer] of images.entries()) {
+        const ext = path.extname(imageName) || '.png';
+        const mimeType = this.getMimeType(ext);
+
+        const fakeFile = this.createFakeMultipartFile(
+          imageBuffer,
+          imageName,
+          mimeType,
+        );
+
+        try {
+          const attachment = await this.attachmentService.uploadFile({
+            filePromise: Promise.resolve(fakeFile),
+            pageId: pageId,
+            userId: userId,
+            spaceId: spaceId,
+            workspaceId: workspaceId,
+          });
+
+          if (attachment) {
+            const fileUrl = `/api/files/${attachment.id}/${attachment.fileName}`;
+
+            attachmentMap.set(imageName, fileUrl);
+
+            this.logger.debug(
+              `Uploaded image: ${imageName} -> ${fileUrl} (attachment ID: ${attachment.id})`,
+            );
+          }
+        } catch (error) {
+          this.logger.error(`Failed to upload image ${imageName}:`, error);
+        }
+      }
+
+      let processedHtml = html;
+
+      for (const [originalName, fileUrl] of attachmentMap.entries()) {
+        const regex = new RegExp(`src=["']${originalName}["']`, 'g');
+        processedHtml = processedHtml.replace(regex, `src="${fileUrl}"`);
+      }
+
+      this.logger.debug(
+        `Successfully processed ${attachmentMap.size} images for page ${pageId}`,
+      );
+      return processedHtml;
+    } catch (error) {
+      this.logger.error('Error processing DOCX images:', error);
+      return html;
     }
   }
 
@@ -193,8 +322,12 @@ export class ImportService {
     }
   }
 
-  private async convertDocxToHtml(docxBuffer: Buffer): Promise<string> {
+  private async convertDocxToHtml(
+    docxBuffer: Buffer,
+  ): Promise<{ html: string; images: Map<string, Buffer> }> {
     try {
+      const images = new Map<string, Buffer>();
+
       const result = await mammoth.convertToHtml(
         { buffer: docxBuffer },
         {
@@ -210,9 +343,17 @@ export class ImportService {
             "r[style-name='Strong'] => strong",
             "r[style-name='Emphasis'] => em",
           ],
-          transformDocument: (element) => {
-            return element;
-          },
+          convertImage: mammoth.images.imgElement((image) => {
+            return image.read().then((buffer) => {
+              const imageName = `image_${Date.now()}_${Math.random().toString(36).substring(7)}.${image.contentType.split('/')[1] || 'png'}`;
+
+              images.set(imageName, Buffer.from(buffer));
+
+              return {
+                src: imageName,
+              };
+            });
+          }),
         },
       );
 
@@ -220,7 +361,10 @@ export class ImportService {
         this.logger.warn('Mammoth conversion warnings:', result.messages);
       }
 
-      return result.value;
+      return {
+        html: result.value,
+        images: images,
+      };
     } catch (error) {
       this.logger.error(`Mammoth conversion failed: ${error}`);
       throw new Error(`Failed to convert DOCX to HTML: ${error}`);

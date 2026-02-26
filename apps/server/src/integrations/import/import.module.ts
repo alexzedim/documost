@@ -8,7 +8,8 @@ import { ImportAttachmentService } from './services/import-attachment.service';
 import { FileTaskController } from './file-task.controller';
 import { PageModule } from '../../core/page/page.module';
 import { ConfluenceImportModule } from '../../ee/confluence-import/confluence-import.module';
-
+import { HttpModule } from '@nestjs/axios';
+import { Agent } from 'node:https';
 @Module({
   providers: [
     ImportService,
@@ -22,6 +23,9 @@ import { ConfluenceImportModule } from '../../ee/confluence-import/confluence-im
     StorageModule,
     PageModule,
     forwardRef(() => ConfluenceImportModule),
+    HttpModule.register({
+      httpsAgent: new Agent({ rejectUnauthorized: false }),
+    }),
   ],
 })
 export class ImportModule {}

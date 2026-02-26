@@ -5,13 +5,11 @@ import {
   FileButton,
   Group,
   Text,
-  Tooltip,
 } from "@mantine/core";
 import {
-  IconBrandNotion,
+  IconFileWord,
   IconCheck,
   IconFileCode,
-  IconFileTypeZip,
   IconMarkdown,
   IconX,
 } from "@tabler/icons-react";
@@ -27,7 +25,7 @@ import { IPage } from "@/features/page/types/page.types.ts";
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfluenceIcon } from "@/components/icons/confluence-icon.tsx";
-import { getFileImportSizeLimit, isCloud } from "@/lib/config.ts";
+import { getFileImportSizeLimit } from "@/lib/config.ts";
 import { formatBytes } from "@/lib";
 import { workspaceAtom } from "@/features/user/atoms/current-user-atom.ts";
 import { getFileTaskById } from "@/features/file-task/services/file-task-service.ts";
@@ -86,7 +84,7 @@ function ImportFormatSelection({ spaceId, onClose }: ImportFormatSelection) {
 
   const markdownFileRef = useRef<() => void>(null);
   const htmlFileRef = useRef<() => void>(null);
-  const notionFileRef = useRef<() => void>(null);
+  const wordFileRef = useRef<() => void>(null);
   const confluenceFileRef = useRef<() => void>(null);
   const zipFileRef = useRef<() => void>(null);
 
@@ -114,7 +112,7 @@ function ImportFormatSelection({ spaceId, onClose }: ImportFormatSelection) {
         id: "import",
         title: t("Importing pages"),
         message: t(
-          "Page import is in progress. You can check back later if this takes longer."
+          "Page import is in progress. You can check back later if this takes longer.",
         ),
         loading: true,
         withCloseButton: true,
@@ -124,8 +122,8 @@ function ImportFormatSelection({ spaceId, onClose }: ImportFormatSelection) {
       setFileTaskId(importTask.id);
 
       // Reset file input after successful upload
-      if (source === "notion" && notionFileRef.current) {
-        notionFileRef.current();
+      if (source === "word" && wordFileRef.current) {
+        wordFileRef.current();
       } else if (source === "confluence" && confluenceFileRef.current) {
         confluenceFileRef.current();
       } else if (source === "generic" && zipFileRef.current) {
@@ -189,7 +187,7 @@ function ImportFormatSelection({ spaceId, onClose }: ImportFormatSelection) {
               "Something went wrong while importing pages: {{reason}}.",
               {
                 reason: fileTask.errorMessage,
-              }
+              },
             ),
             icon: <IconX size={18} />,
             loading: false,
@@ -209,7 +207,7 @@ function ImportFormatSelection({ spaceId, onClose }: ImportFormatSelection) {
             "Something went wrong while importing pages: {{reason}}.",
             {
               reason: err.response?.data.message,
-            }
+            },
           ),
           icon: <IconX size={18} />,
           loading: false,
@@ -328,18 +326,19 @@ function ImportFormatSelection({ spaceId, onClose }: ImportFormatSelection) {
         </FileButton>
 
         <FileButton
-          onChange={(file) => handleZipUpload(file, "notion")}
-          accept="application/zip"
-          resetRef={notionFileRef}
+          onChange={handleFileUpload}
+          accept=".doc,.docx,.rtf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/rtf"
+          multiple
+          resetRef={wordFileRef}
         >
           {(props) => (
             <Button
               justify="start"
               variant="default"
-              leftSection={<IconBrandNotion size={18} />}
+              leftSection={<IconFileWord size={18} />}
               {...props}
             >
-              Notion
+              Word
             </Button>
           )}
         </FileButton>
@@ -349,12 +348,7 @@ function ImportFormatSelection({ spaceId, onClose }: ImportFormatSelection) {
           resetRef={confluenceFileRef}
         >
           {(props) => (
-            // <Tooltip
-            //   label={t("Available in enterprise edition")}
-            //   disabled={canUseConfluence}
-            // >
             <Button
-              // disabled={!canUseConfluence}
               justify="start"
               variant="default"
               leftSection={<ConfluenceIcon size={18} />}
@@ -362,41 +356,20 @@ function ImportFormatSelection({ spaceId, onClose }: ImportFormatSelection) {
             >
               Confluence
             </Button>
-            // </Tooltip>
           )}
         </FileButton>
       </SimpleGrid>
 
-      <Group justify="center" gap="xl" mih={150}>
+      <Group justify="center" gap="xl">
         <div>
-          <Text ta="center" size="lg" inline>
-            Import zip file
-          </Text>
           <Text ta="center" size="sm" c="dimmed" inline py="sm">
             {t(
-              `Upload zip file containing Markdown or HTML files. Max: {{sizeLimit}}`,
+              `Confluence загрузите в формате zip-архив. Максимальный размер файлов: {{sizeLimit}}`,
               {
                 sizeLimit: formatBytes(getFileImportSizeLimit()),
-              }
+              },
             )}
           </Text>
-          <FileButton
-            onChange={(file) => handleZipUpload(file, "generic")}
-            accept="application/zip"
-            resetRef={zipFileRef}
-          >
-            {(props) => (
-              <Group justify="center">
-                <Button
-                  justify="center"
-                  leftSection={<IconFileTypeZip size={18} />}
-                  {...props}
-                >
-                  {t("Upload file")}
-                </Button>
-              </Group>
-            )}
-          </FileButton>
         </div>
       </Group>
     </>

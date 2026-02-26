@@ -25,14 +25,20 @@ import { StorageService } from '../../storage/storage.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { QueueJob, QueueName } from '../../queue/constants';
+import * as mammoth from 'mammoth';
+import { HttpService } from '@nestjs/axios';
+import { lastValueFrom } from 'rxjs';
+import * as https from 'https';
 
 @Injectable()
 export class ImportService {
   private readonly logger = new Logger(ImportService.name);
+  private readonly httpsAgent: https.Agent;
 
   constructor(
     private readonly pageRepo: PageRepo,
     private readonly storageService: StorageService,
+    private readonly httpService: HttpService,
     @InjectKysely() private readonly db: KyselyDB,
     @InjectQueue(QueueName.FILE_TASK_QUEUE)
     private readonly fileTaskQueue: Queue,
@@ -60,6 +66,11 @@ export class ImportService {
         prosemirrorState = await this.processMarkdown(fileContent);
       } else if (fileExtension.endsWith('.html')) {
         prosemirrorState = await this.processHTML(fileContent);
+      } else if (['.doc', '.docx', '.rtf'].includes(fileExtension)) {
+        prosemirrorState = await this.processWordDocument(
+          fileBuffer,
+          file.filename,
+        );
       }
     } catch (err) {
       const message = 'Error processing file content';
@@ -106,6 +117,126 @@ export class ImportService {
     }
 
     return createdPage;
+  }
+
+  async processWordDocument(
+    fileBuffer: Buffer,
+    filename: string,
+  ): Promise<any> {
+    try {
+      const fileExtension = path.extname(filename).toLowerCase();
+
+      let docxBuffer: Buffer = fileBuffer;
+
+      if (fileExtension === '.doc' || fileExtension === '.rtf') {
+        const converted = await this.convertToDocx(fileBuffer, filename);
+        docxBuffer = converted.buffer;
+      }
+
+      const html = await this.convertDocxToHtml(docxBuffer);
+
+      return this.processHTML(html);
+    } catch (error) {
+      this.logger.error(`Error processing Word document: ${error}`);
+      throw new Error(`Failed to process Word document: ${error}`);
+    }
+  }
+
+  private async convertToDocx(
+    fileBuffer: Buffer,
+    originalname: string,
+  ): Promise<{
+    buffer: Buffer;
+    size: number;
+    mimetype: string;
+    originalname: string;
+  }> {
+    try {
+      const docxKey = this.generateSafeFilename(originalname, '.docx');
+      const url = `${process.env.AI_TOOLS_API_URL}/todocx/`;
+
+      const formData = new FormData();
+
+      formData.append(
+        'file',
+        new Blob([Buffer.from(fileBuffer)]),
+        originalname,
+      );
+
+      const response = await lastValueFrom(
+        this.httpService.post(url, formData, {
+          headers: {
+            'x-api-key': process.env.AI_TOOLS_API_KEY,
+          },
+          httpsAgent: this.httpsAgent,
+          responseType: 'arraybuffer',
+        }),
+      );
+
+      if (!response.data) {
+        throw new Error('No response received from conversion service');
+      }
+
+      const buffer = Buffer.from(response.data);
+      const size = buffer.length;
+
+      return {
+        buffer,
+        size,
+        mimetype:
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        originalname: docxKey,
+      };
+    } catch (error) {
+      this.logger.error(`DOCX conversion failed: ${error}`);
+      throw new Error(`Failed to convert document to DOCX: ${error}`);
+    }
+  }
+
+  private async convertDocxToHtml(docxBuffer: Buffer): Promise<string> {
+    try {
+      const result = await mammoth.convertToHtml(
+        { buffer: docxBuffer },
+        {
+          styleMap: [
+            "p[style-name='Heading 1'] => h1:fresh",
+            "p[style-name='Heading 2'] => h2:fresh",
+            "p[style-name='Heading 3'] => h3:fresh",
+            "p[style-name='Heading 4'] => h4:fresh",
+            "p[style-name='Heading 5'] => h5:fresh",
+            "p[style-name='Heading 6'] => h6:fresh",
+            "p[style-name='Title'] => h1:fresh",
+            "p[style-name='Subtitle'] => h2:fresh",
+            "r[style-name='Strong'] => strong",
+            "r[style-name='Emphasis'] => em",
+          ],
+          transformDocument: (element) => {
+            return element;
+          },
+        },
+      );
+
+      if (result.messages.length > 0) {
+        this.logger.warn('Mammoth conversion warnings:', result.messages);
+      }
+
+      return result.value;
+    } catch (error) {
+      this.logger.error(`Mammoth conversion failed: ${error}`);
+      throw new Error(`Failed to convert DOCX to HTML: ${error}`);
+    }
+  }
+
+  private generateSafeFilename(
+    originalname: string,
+    extension: string,
+  ): string {
+    const nameWithoutExt = path.basename(
+      originalname,
+      path.extname(originalname),
+    );
+    const safeName = sanitize(nameWithoutExt.slice(0, 255));
+    return `${safeName}${extension}`;
   }
 
   async processMarkdown(markdownInput: string): Promise<any> {

@@ -44,9 +44,18 @@ export class ImportController {
     @AuthUser() user: User,
     @AuthWorkspace() workspace: Workspace,
   ) {
-    const validFileExtensions = ['.md', '.html'];
+    const validFileExtensions = [
+      '.md',
+      '.html',
+      '.doc',
+      '.docx',
+      '.rtf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/rtf',
+    ];
 
-    const maxFileSize = bytes('10mb');
+    const maxFileSize = bytes('200mb');
 
     let file = null;
     try {
@@ -57,7 +66,7 @@ export class ImportController {
       this.logger.error(err.message);
       if (err?.statusCode === 413) {
         throw new BadRequestException(
-          `File too large. Exceeds the 10mb import limit`,
+          `File too large. Exceeds the 200mb import limit`,
         );
       }
     }

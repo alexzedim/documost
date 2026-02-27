@@ -224,8 +224,8 @@ export class AuthService {
 
     await this.spaceService.createSpace(user, workspaceId, {
       name: namespace,
-      description: 'Ваши личное пространство',
       slug: generateSlugId(),
+      isSystem: true,
     });
 
     this.logger.debug({

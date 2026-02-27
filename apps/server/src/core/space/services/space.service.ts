@@ -37,9 +37,7 @@ export class SpaceService {
   ): Promise<Space> {
     let space = null;
 
-    const systemUser = await this.userRepo.findSystemUser(
-      workspaceId,
-    );
+    const systemUser = await this.userRepo.findSystemUser(workspaceId);
 
     const isSystemUser = authUser.id === systemUser.id;
 

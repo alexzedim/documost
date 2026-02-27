@@ -171,6 +171,7 @@ export class WorkspaceService {
         const spaceInfo: CreateSpaceDto = {
           name: 'General',
           slug: 'general',
+          isSystem: false,
         };
 
         const createdSpace = await this.spaceService.create(

@@ -1,11 +1,12 @@
 import {
   IsAlphanumeric,
+  IsBoolean,
   IsOptional,
   IsString,
   MaxLength,
   MinLength,
 } from 'class-validator';
-import {Transform, TransformFnParams} from "class-transformer";
+import { Transform, TransformFnParams } from 'class-transformer';
 
 export class CreateSpaceDto {
   @MinLength(2)
@@ -22,4 +23,8 @@ export class CreateSpaceDto {
   @MaxLength(50)
   @IsAlphanumeric()
   slug: string;
+
+  @IsBoolean()
+  @Transform(({ value }: TransformFnParams) => value ?? false)
+  isSystem: boolean = false;
 }

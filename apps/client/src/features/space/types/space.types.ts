@@ -12,6 +12,7 @@ export interface ISpace {
   logo?: string;
   slug: string;
   hostname: string;
+  isSystem: boolean;
   creatorId: string;
   createdAt: Date;
   updatedAt: Date;

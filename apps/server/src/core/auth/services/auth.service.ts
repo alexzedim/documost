@@ -361,6 +361,7 @@ export class AuthService {
 
   /**
    * Set up user space memberships based on parsed Keycloak roles
+   * Creates spaces for OWNER/ADMIN roles if they don't exist
    * @param user - User entity
    * @param parsedRoles - Array of parsed Keycloak roles
    * @param workspaceId - Workspace ID
@@ -372,8 +373,8 @@ export class AuthService {
   ): Promise<void> {
     for (const parsedRole of parsedRoles) {
       try {
-        // Find space by name within workspace
-        const space = await this.db
+        // Find space by name within workspace (case-insensitive)
+        let space = await this.db
           .selectFrom('spaces')
           .selectAll()
           .where('workspaceId', '=', workspaceId)
@@ -381,15 +382,40 @@ export class AuthService {
           .executeTakeFirst();
 
         if (!space) {
-          this.logger.debug({
-            message: 'Space not found for Keycloak role, skipping membership',
-            spaceName: parsedRole.space,
-            userId: user.id,
-          });
-          continue;
+          // Space doesn't exist - check if user can create it
+          if (
+            parsedRole.role === KeycloakRole.OWNER ||
+            parsedRole.role === KeycloakRole.ADMIN
+          ) {
+            // Create space with user as creator (will auto-add as admin)
+            space = await this.spaceService.createSpace(user, workspaceId, {
+              name: parsedRole.space,
+              slug: generateSlugId(),
+              isSystem: true,
+            });
+
+            this.logger.debug({
+              message: 'Created space from Keycloak role',
+              spaceName: parsedRole.space,
+              spaceId: space.id,
+              userId: user.id,
+            });
+            // Space creation handles membership automatically, continue to next role
+            continue;
+          } else {
+            // Non-owner/admin cannot create space
+            this.logger.debug({
+              message:
+                'Space not found and user cannot create it (non-owner/admin role)',
+              spaceName: parsedRole.space,
+              userRole: parsedRole.role,
+              userId: user.id,
+            });
+            continue;
+          }
         }
 
-        // Check if user is already a member of this space
+        // Space exists - create/update membership
         const existingMembership =
           await this.spaceMemberRepo.getSpaceMemberByTypeId(space.id, {
             userId: user.id,

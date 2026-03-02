@@ -142,7 +142,7 @@ export class AuthService {
 
     // If local user exists, validate password
     if (user) {
-      return this.validateLocalUserPassword(user, password);
+      return this.validateLocalUserPassword(user, password, workspaceId);
     }
 
     // If no local user, try Keycloak authentication
@@ -163,6 +163,7 @@ export class AuthService {
 
       // Update space memberships from Keycloak roles for existing users
       const parsedRoles = this.parseKeycloakRole(keycloakUser.roles);
+
       if (parsedRoles.length > 0) {
         await this.setupUserSpaceMemberships(user, parsedRoles, workspaceId);
       }
@@ -181,6 +182,7 @@ export class AuthService {
   private async validateLocalUserPassword(
     user: User,
     password: string,
+    workspaceId: string,
   ): Promise<User> {
     // If user has no password, they must use Keycloak
     if (user.password === null) {
@@ -189,11 +191,23 @@ export class AuthService {
         user.email,
         password,
       );
+
       if (!keycloakUser) {
         throw new UnauthorizedException(
           'This account uses domain authentication. Please use your domain credentials.',
         );
       }
+
+      // Validate user ID consistency between local and Keycloak
+      this.validateUserIdConsistency(user, keycloakUser);
+
+      // Update space memberships from Keycloak roles for existing users
+      const parsedRoles = this.parseKeycloakRole(keycloakUser.roles);
+
+      if (parsedRoles.length > 0) {
+        await this.setupUserSpaceMemberships(user, parsedRoles, workspaceId);
+      }
+
       return user;
     }
 
@@ -221,7 +235,7 @@ export class AuthService {
       message: 'Creating new user from Keycloak',
       keycloakUserId: keycloakUser.id,
       email: keycloakUser.email,
-    });
+    }); 
 
     const user = await this.userRepo.insertUser({
       id: keycloakUser.id,
@@ -383,10 +397,7 @@ export class AuthService {
 
         if (!space) {
           // Space doesn't exist - check if user can create it
-          if (
-            parsedRole.role === KeycloakRole.OWNER ||
-            parsedRole.role === KeycloakRole.ADMIN
-          ) {
+          if (parsedRole.role === KeycloakRole.OWNER) {
             // Create space with user as creator (will auto-add as admin)
             space = await this.spaceService.createSpace(user, workspaceId, {
               name: parsedRole.space,
@@ -403,7 +414,6 @@ export class AuthService {
             // Space creation handles membership automatically, continue to next role
             continue;
           } else {
-            // Non-owner/admin cannot create space
             this.logger.debug({
               message:
                 'Space not found and user cannot create it (non-owner/admin role)',
@@ -422,7 +432,7 @@ export class AuthService {
           });
 
         const spaceRole = this.mapKeycloakRoleToSpaceRole(parsedRole.role);
-
+        console.log(space, parsedRole, spaceRole, existingMembership)
         if (existingMembership) {
           // Update existing membership role if different
           if (existingMembership.role !== spaceRole) {
@@ -694,13 +704,13 @@ export class AuthService {
       if (!externalId || !externalEmail) {
         throw new BadRequestException('Email not found in Keycloak');
       }
-
+      console.log(keycloakUser);
       return keycloakUser;
-    } catch (error) {
+    } catch (error: any) {
       this.logger.log({
         logTag,
         message: 'check keycloak integration',
-        error: error,
+        error: error.status,
       });
 
       return undefined;
@@ -732,6 +742,8 @@ export class AuthService {
 
       const userInfo: KeyCloakUserInfo = userInfoResponse.data;
 
+      const roles = 'groups' in userInfo && Array.isArray(userInfo.groups) && userInfo.groups.length > 0 ? userInfo.groups : [];
+
       return userInfo
         ? {
             id: userInfo.sub,
@@ -739,14 +751,14 @@ export class AuthService {
             email: userInfo.email,
             firstName: userInfo.given_name,
             lastName: userInfo.family_name,
-            roles: userInfo.realm_access?.roles || [],
+            roles: roles,
           }
         : undefined;
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error({
         logTag,
         message: 'Error getting user info:',
-        error: error,
+        status: error.status,
       });
 
       return undefined;

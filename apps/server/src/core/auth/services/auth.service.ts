@@ -166,6 +166,7 @@ export class AuthService {
 
       if (parsedRoles.length > 0) {
         await this.setupUserSpaceMemberships(user, parsedRoles, workspaceId);
+        await this.syncUserSpaceRoles(user.id, workspaceId, parsedRoles);
       }
     }
 
@@ -206,6 +207,7 @@ export class AuthService {
 
       if (parsedRoles.length > 0) {
         await this.setupUserSpaceMemberships(user, parsedRoles, workspaceId);
+        await this.syncUserSpaceRoles(user.id, workspaceId, parsedRoles);
       }
 
       return user;
@@ -242,7 +244,6 @@ export class AuthService {
       name: keycloakUser.username,
       email: keycloakUser.email,
       workspaceId: workspaceId,
-      // @todo research
       role: UserRole.ADMIN,
     });
 
@@ -269,6 +270,7 @@ export class AuthService {
     const parsedRoles = this.parseKeycloakRole(keycloakUser.roles);
     if (parsedRoles.length > 0) {
       await this.setupUserSpaceMemberships(user, parsedRoles, workspaceId);
+      await this.syncUserSpaceRoles(user.id, workspaceId, parsedRoles);
     }
 
     this.logger.debug({
@@ -473,6 +475,73 @@ export class AuthService {
           error: error instanceof Error ? error.message : String(error),
         });
       }
+    }
+  }
+
+  /**
+   * Synchronize user space roles by removing memberships that no longer exist in parsedRoles
+   * @param userId - User ID to sync roles for
+   * @param workspaceId - Workspace ID
+   * @param parsedRoles - Array of parsed roles from Keycloak
+   */
+  private async syncUserSpaceRoles(
+    userId: string,
+    workspaceId: string,
+    parsedRoles: ParsedKeycloakRole[],
+  ): Promise<void> {
+    try {
+      // Get all spaces in the workspace to map space IDs to space names
+      const spaces = await this.db
+        .selectFrom('spaces')
+        .select(['id', 'name'])
+        .where('workspaceId', '=', workspaceId)
+        .execute();
+
+      // Create a map of space ID to space name for quick lookup
+      const spaceIdToNameMap = new Map<string, string>();
+      for (const space of spaces) {
+        spaceIdToNameMap.set(space.id, space.name);
+      }
+
+      // Create a set of expected space names from parsedRoles (case-insensitive)
+      const expectedSpaceNames = new Set(
+        parsedRoles.map((role) => role.space.toLowerCase()),
+      );
+
+      // Get all space memberships for the user in the workspace
+      const memberships = await this.db
+        .selectFrom('spaceMembers')
+        .selectAll()
+        .where('userId', '=', userId)
+        .execute();
+
+      // Find and remove memberships that are not in the expected roles
+      for (const membership of memberships) {
+        const spaceName = spaceIdToNameMap.get(membership.spaceId);
+
+        // If space exists in workspace and its name is not in expected roles, remove membership
+        if (spaceName && !expectedSpaceNames.has(spaceName.toLowerCase())) {
+          await this.spaceMemberRepo.removeSpaceMemberById(
+            membership.id,
+            membership.spaceId,
+          );
+
+          this.logger.debug({
+            message: 'Removed space membership not present in Keycloak roles',
+            userId: userId,
+            spaceId: membership.spaceId,
+            spaceName: spaceName,
+            membershipId: membership.id,
+          });
+        }
+      }
+    } catch (error) {
+      this.logger.warn({
+        message: 'Failed to sync user space roles',
+        userId: userId,
+        workspaceId: workspaceId,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 

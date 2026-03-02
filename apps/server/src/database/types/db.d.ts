@@ -277,6 +277,7 @@ export interface Spaces {
   updatedAt: Generated<Timestamp>;
   visibility: Generated<string>;
   workspaceId: string;
+  isSystem: boolean;
 }
 
 export interface UserMfa {

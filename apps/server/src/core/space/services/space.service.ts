@@ -99,6 +99,7 @@ export class SpaceService {
         creatorId: userId,
         workspaceId: workspaceId,
         slug: createSpaceDto.slug,
+        isSystem: createSpaceDto.isSystem,
       },
       trx,
     );

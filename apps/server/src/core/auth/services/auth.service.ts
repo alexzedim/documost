@@ -40,11 +40,25 @@ import {
   AuthResponse,
   KeycloakAuthUser,
   KeyCloakUserInfo,
+  KeycloakRole,
+  ParsedKeycloakRole,
 } from 'src/core/auth/dto/keycloak-payload';
+import {
+  KEYCLOAK_ROLE_SPLITTER,
+  SPACE_ROLE_SPLITTER,
+  ALLOWED_PREFIX,
+} from 'src/common/constants/keycloak.const';
+import {
+  isValidKeycloakRoleString,
+  isValidParsedKeycloakRole,
+} from 'src/common/guards/keycloak-role.guard';
+import { SpaceRole } from 'src/common/helpers/types/permission';
 import { FastifyRequest } from 'fastify';
 import * as crypto from 'crypto';
 import { RedisService } from '@nestjs-labs/nestjs-ioredis';
 import { SpaceService } from 'src/core/space/services/space.service';
+import { SpaceMemberRepo } from '@wiki/db/repos/space/space-member.repo';
+import { SpaceRepo } from '@wiki/db/repos/space/space.repo';
 import { UserRole } from 'src/common/helpers/types/permission';
 import { GroupUserRepo } from '@wiki/db/repos/group/group-user.repo';
 import { GroupRepo } from '@wiki/db/repos/group/group.repo';
@@ -58,6 +72,8 @@ export class AuthService {
     private environmentService: EnvironmentService,
     private signupService: SignupService,
     private spaceService: SpaceService,
+    private spaceMemberRepo: SpaceMemberRepo,
+    private spaceRepo: SpaceRepo,
     private tokenService: TokenService,
     private userRepo: UserRepo,
     private groupUserRepo: GroupUserRepo,
@@ -144,6 +160,12 @@ export class AuthService {
     } else {
       // Validate user ID consistency between local and Keycloak
       this.validateUserIdConsistency(user, keycloakUser);
+
+      // Update space memberships from Keycloak roles for existing users
+      const parsedRoles = this.parseKeycloakRole(keycloakUser.roles);
+      if (parsedRoles.length > 0) {
+        await this.setupUserSpaceMemberships(user, parsedRoles, workspaceId);
+      }
     }
 
     return user;
@@ -206,6 +228,7 @@ export class AuthService {
       name: keycloakUser.username,
       email: keycloakUser.email,
       workspaceId: workspaceId,
+      // @todo research
       role: UserRole.ADMIN,
     });
 
@@ -227,6 +250,12 @@ export class AuthService {
       slug: generateSlugId(),
       isSystem: true,
     });
+
+    // Parse Keycloak roles and set up space memberships
+    const parsedRoles = this.parseKeycloakRole(keycloakUser.roles);
+    if (parsedRoles.length > 0) {
+      await this.setupUserSpaceMemberships(user, parsedRoles, workspaceId);
+    }
 
     this.logger.debug({
       message: 'User created successfully from Keycloak',
@@ -255,6 +284,159 @@ export class AuthService {
         localUserEmail: localUser.email,
         keycloakUserEmail: keycloakUser.email,
       });
+    }
+  }
+
+  /**
+   * Parse Keycloak roles from role strings
+   * Role string format: PREFIX__SPACE_NAME-ROLE
+   * Example: biz-komm-ai__mySpace-admin
+   *
+   * @param roles - Array of role strings from Keycloak token
+   * @returns Array of parsed roles with space name and role
+   */
+  private parseKeycloakRole(roles: string[] | undefined): ParsedKeycloakRole[] {
+    if (!roles || !Array.isArray(roles) || roles.length === 0) {
+      return [];
+    }
+
+    const parsedRoles: ParsedKeycloakRole[] = [];
+
+    for (const roleString of roles) {
+      // Validate role string format
+      if (!isValidKeycloakRoleString(roleString, ALLOWED_PREFIX)) {
+        continue;
+      }
+
+      // Split by keycloak role splitter (e.g., '__')
+      const [prefix, suffix] = roleString.split(KEYCLOAK_ROLE_SPLITTER);
+
+      // Check if prefix is in allowed list (double-check)
+      if (!ALLOWED_PREFIX.includes(prefix)) {
+        continue;
+      }
+
+      // Split suffix by space role splitter (e.g., '-')
+      // Note: space name can contain dashes, so we need to find the last dash
+      const lastDashIndex = suffix.lastIndexOf(SPACE_ROLE_SPLITTER);
+      if (lastDashIndex === -1) {
+        continue;
+      }
+
+      const spaceName = suffix.substring(0, lastDashIndex);
+      const role = suffix.substring(lastDashIndex + 1) as KeycloakRole;
+
+      // Build parsed role object
+      const parsedRole: ParsedKeycloakRole = {
+        space: spaceName,
+        role: role,
+      };
+
+      // Validate parsed role
+      if (isValidParsedKeycloakRole(parsedRole)) {
+        parsedRoles.push(parsedRole);
+      }
+    }
+
+    return parsedRoles;
+  }
+
+  /**
+   * Map Keycloak role to wiki SpaceRole
+   * @param keycloakRole - Keycloak role enum value
+   * @returns Corresponding SpaceRole value
+   */
+  private mapKeycloakRoleToSpaceRole(keycloakRole: KeycloakRole): SpaceRole {
+    switch (keycloakRole) {
+      case KeycloakRole.OWNER:
+      case KeycloakRole.ADMIN:
+        return SpaceRole.ADMIN;
+      case KeycloakRole.EDITOR:
+        return SpaceRole.WRITER;
+      case KeycloakRole.NORMAL:
+      default:
+        return SpaceRole.READER;
+    }
+  }
+
+  /**
+   * Set up user space memberships based on parsed Keycloak roles
+   * @param user - User entity
+   * @param parsedRoles - Array of parsed Keycloak roles
+   * @param workspaceId - Workspace ID
+   */
+  private async setupUserSpaceMemberships(
+    user: User,
+    parsedRoles: ParsedKeycloakRole[],
+    workspaceId: string,
+  ): Promise<void> {
+    for (const parsedRole of parsedRoles) {
+      try {
+        // Find space by name within workspace
+        const space = await this.db
+          .selectFrom('spaces')
+          .selectAll()
+          .where('workspaceId', '=', workspaceId)
+          .where('name', 'ilike', parsedRole.space)
+          .executeTakeFirst();
+
+        if (!space) {
+          this.logger.debug({
+            message: 'Space not found for Keycloak role, skipping membership',
+            spaceName: parsedRole.space,
+            userId: user.id,
+          });
+          continue;
+        }
+
+        // Check if user is already a member of this space
+        const existingMembership =
+          await this.spaceMemberRepo.getSpaceMemberByTypeId(space.id, {
+            userId: user.id,
+          });
+
+        const spaceRole = this.mapKeycloakRoleToSpaceRole(parsedRole.role);
+
+        if (existingMembership) {
+          // Update existing membership role if different
+          if (existingMembership.role !== spaceRole) {
+            await this.spaceMemberRepo.updateSpaceMember(
+              { role: spaceRole },
+              existingMembership.id,
+              space.id,
+            );
+            this.logger.debug({
+              message: 'Updated space membership from Keycloak role',
+              userId: user.id,
+              spaceId: space.id,
+              spaceName: space.name,
+              newRole: spaceRole,
+            });
+          }
+        } else {
+          // Create new membership
+          await this.spaceMemberRepo.insertSpaceMember({
+            userId: user.id,
+            spaceId: space.id,
+            role: spaceRole,
+          });
+          this.logger.debug({
+            message: 'Created space membership from Keycloak role',
+            userId: user.id,
+            spaceId: space.id,
+            spaceName: space.name,
+            role: spaceRole,
+          });
+        }
+      } catch (error) {
+        this.logger.warn({
+          message: 'Failed to set up space membership from Keycloak role',
+          userId: user.id,
+          spaceName: parsedRole.space,
+          role: parsedRole.role,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
   }
 

@@ -1,3 +1,21 @@
+/**
+ * Keycloak role values that can be assigned to users
+ */
+export enum KeycloakRole {
+  OWNER = 'owner',
+  ADMIN = 'admin',
+  EDITOR = 'editor',
+  NORMAL = 'normal',
+}
+
+/**
+ * Parsed Keycloak role containing space name and role
+ */
+export type ParsedKeycloakRole = {
+  space: string;
+  role: KeycloakRole;
+};
+
 export type AuthResponse = {
   access_token: string;
   expires_in: number;

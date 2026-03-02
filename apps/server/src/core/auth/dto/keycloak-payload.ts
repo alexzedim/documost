@@ -33,7 +33,8 @@ export type KeycloakAuthUser = {
   email?: string;
   firstName?: string;
   lastName?: string;
-  roles: string[];
+  roles?: string[];
+  groups?: string[];
 };
 
 export type AuthUser = {

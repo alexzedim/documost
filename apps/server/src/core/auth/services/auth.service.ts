@@ -732,6 +732,8 @@ export class AuthService {
 
       const userInfo: KeyCloakUserInfo = userInfoResponse.data;
 
+      const roles = 'groups' in userInfo && Array.isArray(userInfo.groups) && userInfo.groups.length > 0 ? userInfo.groups : [];
+
       return userInfo
         ? {
             id: userInfo.sub,
@@ -739,7 +741,7 @@ export class AuthService {
             email: userInfo.email,
             firstName: userInfo.given_name,
             lastName: userInfo.family_name,
-            roles: userInfo.realm_access?.roles || [],
+            roles: roles,
           }
         : undefined;
     } catch (error) {

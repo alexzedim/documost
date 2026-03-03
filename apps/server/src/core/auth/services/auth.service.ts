@@ -46,7 +46,6 @@ import {
 import {
   KEYCLOAK_ROLE_SPLITTER,
   SPACE_ROLE_SPLITTER,
-  ALLOWED_PREFIX,
 } from 'src/common/constants/keycloak.const';
 import {
   isValidKeycloakRoleString,
@@ -376,9 +375,11 @@ export class AuthService {
 
     const parsedRoles: ParsedKeycloakRole[] = [];
 
+    const ALLOWED_PREFIX = this.environmentService.getKeyclockRolePrefix();
+
     for (const roleString of roles) {
       // Validate role string format
-      if (!isValidKeycloakRoleString(roleString, ALLOWED_PREFIX)) {
+      if (!isValidKeycloakRoleString(roleString, [ALLOWED_PREFIX])) {
         continue;
       }
 
@@ -386,7 +387,7 @@ export class AuthService {
       const [prefix, suffix] = roleString.split(KEYCLOAK_ROLE_SPLITTER);
 
       // Check if prefix is in allowed list (double-check)
-      if (!ALLOWED_PREFIX.includes(prefix)) {
+      if (![ALLOWED_PREFIX].includes(prefix)) {
         continue;
       }
 

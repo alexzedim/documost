@@ -328,7 +328,7 @@ export class AuthService {
       .selectAll()
       .where('workspaceId', '=', workspaceId)
       .where('name', 'ilike', namespace)
-      .where('isSystem', '=', true)
+      .where('isSystem', '=', false)
       .executeTakeFirst();
 
     if (existingPersonalSpace) {

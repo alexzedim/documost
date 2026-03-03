@@ -170,6 +170,8 @@ export class AuthService {
       }
     }
 
+    await this.ensurePersonalSpaceExists(user, workspaceId);
+
     return user;
   }
 
@@ -209,6 +211,8 @@ export class AuthService {
         await this.setupUserSpaceMemberships(user, parsedRoles, workspaceId);
         await this.syncUserSpaceRoles(user.id, workspaceId, parsedRoles);
       }
+   
+      await this.ensurePersonalSpaceExists(user, workspaceId);
 
       return user;
     }
@@ -218,6 +222,8 @@ export class AuthService {
     if (!isPasswordMatch) {
       throw new UnauthorizedException('Email or password does not match');
     }
+
+    await this.ensurePersonalSpaceExists(user, workspaceId);
 
     return user;
   }
@@ -301,6 +307,58 @@ export class AuthService {
         keycloakUserEmail: keycloakUser.email,
       });
     }
+  }
+
+  /**
+   * Ensure user has a personal space created
+   * Checks if the user has a personal space (system space with name matching their username namespace)
+   * Creates one if it doesn't exist
+   * @param user - User entity
+   * @param workspaceId - Workspace ID
+   */
+  private async ensurePersonalSpaceExists(
+    user: User,
+    workspaceId: string,
+  ): Promise<void> {
+    const { namespace } = extractUsernameAndSpaceName(user.name);
+
+    // Check if user already has a personal space (system space with matching name)
+    const existingPersonalSpace = await this.db
+      .selectFrom('spaces')
+      .selectAll()
+      .where('workspaceId', '=', workspaceId)
+      .where('name', 'ilike', namespace)
+      .where('isSystem', '=', true)
+      .executeTakeFirst();
+
+    if (existingPersonalSpace) {
+      this.logger.debug({
+        message: 'Personal space already exists for user',
+        userId: user.id,
+        spaceId: existingPersonalSpace.id,
+        spaceName: existingPersonalSpace.name,
+      });
+      return;
+    }
+
+    // Create personal space for user
+    this.logger.debug({
+      message: 'Creating personal space for user',
+      userId: user.id,
+      namespace: namespace,
+    });
+
+    await this.spaceService.createSpace(user, workspaceId, {
+      name: namespace,
+      slug: generateSlugId(),
+      isSystem: true,
+    });
+
+    this.logger.debug({
+      message: 'Personal space created successfully for user',
+      userId: user.id,
+      namespace: namespace,
+    });
   }
 
   /**

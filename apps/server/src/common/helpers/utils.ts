@@ -219,36 +219,37 @@ export function toStringify(input: string): string {
 
 /**
  * Convert a string to capital case.
- * First slugifies the input using slugifySpace, then capitalizes the first letter,
- * and finally replaces hyphens with spaces.
+ * Keeps Cyrillic and Latin letters, numbers, emojis, and special symbols,
+ * while capitalizing only the first letter (not symbol).
  *
  * @param input - The string to convert to capital case
- * @returns The string in capital case, or empty string if input is empty or contains only special characters
+ * @returns The string in capital case, or empty string if input is empty
  *
  * @example
- * toCapitalCase("Hello World") // Returns "Hello world"
- * toCapitalCase("Привет мир") // Returns "Привет мир"
- * toCapitalCase("TEST SPACE") // Returns "Test space"
- * toCapitalCase("Test@#$%^&*()World") // Returns "Test world"
+ * toCapitalCase("Hello World") // Returns "Hello World"
+ * toCapitalCase("привет мир") // Returns "Привет мир"
+ * toCapitalCase("TEST SPACE") // Returns "TEST SPACE"
+ * toCapitalCase("😀hello world") // Returns "😀Hello World"
+ * toCapitalCase("@#$hello") // Returns "@#$Hello"
  */
 export function toCapitalCase(input: string): string {
   if (!input) {
     return '';
   }
 
-  // First, slugify the input using slugifySpace
-  const slugified = toStringify(input);
+  // Find the first letter (Cyrillic or Latin) in the string
+  const letterRegex = /[a-zA-Zа-яёА-ЯЁ]/;
+  const firstLetterIndex = input.search(letterRegex);
 
-  // Handle edge case: if slugification resulted in empty string (e.g., only special characters)
-  if (!slugified) {
-    return '';
+  // If no letter found, return the input as is
+  if (firstLetterIndex === -1) {
+    return input;
   }
 
-  // Capitalize only the first letter of the slugified string
-  const capitalized = slugified.charAt(0).toUpperCase() + slugified.slice(1);
+  // Capitalize the first letter and keep everything else as is
+  const beforeFirstLetter = input.slice(0, firstLetterIndex);
+  const firstLetter = input[firstLetterIndex];
+  const afterFirstLetter = input.slice(firstLetterIndex + 1);
 
-  // Replace all hyphens with spaces
-  const result = capitalized.replace(/-/g, ' ');
-
-  return result;
+  return beforeFirstLetter + firstLetter.toUpperCase() + afterFirstLetter;
 }

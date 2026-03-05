@@ -112,7 +112,7 @@ export default function SpaceMembersList({
 
   return (
     <>
-      <SearchInput onSearch={handleSearch} />
+      {!readOnly && <SearchInput onSearch={handleSearch} />}
       <ScrollArea h={450}>
         <Table.ScrollContainer minWidth={500}>
           <Table highlightOnHover verticalSpacing={8}>

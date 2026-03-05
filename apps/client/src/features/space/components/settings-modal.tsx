@@ -50,6 +50,12 @@ export default function SpaceSettingsModal({
           </Modal.Header>
           <Modal.Body>
             <div style={{ height: rem(600) }}>
+              {space?.isSystem && (
+                <Text fw={600} size="sm" color="red">
+                  Пространство является системным! Управление осуществляется
+                  через KeyCloak.
+                </Text>
+              )}
               <Tabs defaultValue="members">
                 <Tabs.List>
                   <Tabs.Tab fw={500} value="general">

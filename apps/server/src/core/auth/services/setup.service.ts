@@ -54,7 +54,7 @@ export class SetupService {
       .selectFrom('spaces')
       .selectAll()
       .where('workspaceId', '=', workspaceId)
-      .where('name', 'ilike', namespace)
+      .where('slug', '=', spaceSlug)
       .where('isSystem', '=', false)
       .executeTakeFirst();
 

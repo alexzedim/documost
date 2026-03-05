@@ -314,6 +314,7 @@ export class AuthService {
     );
 
     const emailTemplate = ChangePasswordEmail({ username: user.name });
+
     await this.mailService.sendToQueue({
       to: user.email,
       subject: 'Your password has been changed',
@@ -573,6 +574,7 @@ export class AuthService {
 
     // Create fingerprint string with components
     const fingerprintString = `${ip}|${userAgent}|${acceptLanguage}|${acceptEncoding}`;
+    
     const hash = crypto.createHash('sha256');
     hash.update(fingerprintString);
 

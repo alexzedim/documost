@@ -8,7 +8,7 @@ import { EnvironmentService } from 'src/integrations/environment/environment.ser
 import {
   generateSlugId,
   extractUsernameAndSpaceName,
-  slugifySpace,
+  toStringify,
   toCapitalCase,
 } from 'src/common/helpers';
 import { User } from '@wiki/db/types/entity.types';
@@ -33,7 +33,6 @@ export class SetupService {
   constructor(
     private readonly spaceService: SpaceService,
     private readonly spaceMemberRepo: SpaceMemberRepo,
-    private readonly spaceRepo: SpaceRepo,
     private readonly environmentService: EnvironmentService,
     @InjectKysely() private readonly db: KyselyDB,
   ) {}
@@ -171,9 +170,9 @@ export class SetupService {
     for (const parsedRole of parsedRoles) {
       try {
         const spaceName = toCapitalCase(parsedRole.space);
-        const spaceSlug = slugifySpace(parsedRole.space);
+        const spaceSlug = toStringify(parsedRole.space);
         // Find space by slug within workspace (exact match)
-        // Also check name with case-insensitive matching for backward compatibility
+
         let space = await this.db
           .selectFrom('spaces')
           .selectAll()
@@ -296,7 +295,7 @@ export class SetupService {
 
       // Create a set of expected space slugs from parsedRoles using slugifySpace
       const expectedSpaceSlugs = new Set(
-        parsedRoles.map((role) => slugifySpace(role.space)),
+        parsedRoles.map((role) => toStringify(role.space)),
       );
 
       // Get all space memberships for the user in the workspace

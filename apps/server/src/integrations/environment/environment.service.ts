@@ -298,10 +298,7 @@ export class EnvironmentService {
   }
 
   getKeyclockWikiRolePrefix(): string {
-    return (
-      this.configService.get<string>('KEYCLOAK_WIKI_ROLE_PREFIX', '') ||
-      this.configService.get<string>('KEYCLOAK_ROLE_PREFIX', '')
-    );
+    return this.configService.get<string>('KEYCLOAK_WIKI_ROLE_PREFIX', '');
   }
 
   getKaspeskySsl(): string {

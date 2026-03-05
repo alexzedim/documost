@@ -12,6 +12,7 @@ import { SpaceModule } from 'src/core/space/space.module';
 import { SessionActivityService } from './services/session-activity.service';
 import { DeviceValidatorService } from './services/device-validator.service';
 import { ApiKeyModule } from '../../ee/api-key/api-key.module';
+import { SetupService } from './services/setup.service';
 
 @Global()
 @Module({
@@ -27,7 +28,7 @@ import { ApiKeyModule } from '../../ee/api-key/api-key.module';
     ApiKeyModule
   ],
   controllers: [AuthController],
-  providers: [AuthService, SignupService, JwtStrategy, SessionActivityService, DeviceValidatorService],
+  providers: [AuthService, SignupService, JwtStrategy, SessionActivityService, DeviceValidatorService, SetupService],
   exports: [SignupService, SessionActivityService, DeviceValidatorService],
 })
 export class AuthModule {}

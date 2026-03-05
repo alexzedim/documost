@@ -3,7 +3,8 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { sanitize } from 'sanitize-filename-ts';
 import { FastifyRequest } from 'fastify';
-import * as slugify from "@sindresorhus/slugify";
+import { CYRILLIC_TO_LATIN_MAP, CYRILLIC_PATTERN } from '../constants/transliteration.const';
+import { RedisConfig } from '../../integrations/redis/interfaces/redis.interface';
 
 export const envPath = path.resolve(process.cwd(), '..', '..', '.env');
 
@@ -24,14 +25,6 @@ export function generateRandomSuffixNumbers(length: number) {
     .toFixed(length)
     .substring(2, 2 + length);
 }
-
-export type RedisConfig = {
-  host: string;
-  port: number;
-  db: number;
-  password?: string;
-  family?: number;
-};
 
 export function parseRedisUrl(redisUrl: string): RedisConfig {
   // format - redis[s]://[[username][:password]@][host][:port][/db-number][?family=4|6]
@@ -130,12 +123,12 @@ export function extractUsernameAndSpaceName(userName: string): {
 
 
 export function buildPageSlug (pageSlugId: string, pageTitle?: string): string {
-  const titleSlug = slugify(pageTitle?.substring(0, 70) || "untitled", {
-    customReplacements: [
-      ["♥", ""],
-      ["🦄", ""],
-    ],
-  });
+
+  if (!pageTitle) {
+    return pageSlugId;
+  }
+
+  const titleSlug = toStringify(pageTitle.substring(0, 70));
 
   return `${titleSlug}-${pageSlugId}`;
 }
@@ -159,22 +152,61 @@ export function generateDeviceFingerprint(req: FastifyRequest): string {
 }
 
 /**
- * Slugify a string to create URL-friendly slugs.
- * Supports Cyrillic (а-я, а-я), English letters (a-z), and numbers (0-9).
- * Converts to lowercase and replaces spaces and special characters with hyphens.
+ * Transliterate Cyrillic characters to Latin characters.
+ * Converts Russian Cyrillic letters to their phonetic Latin equivalents.
  *
- * @param input - The string to slugify
- * @returns The slugified string, or empty string if input is empty or contains only special characters
+ * @param input - The string to transliterate
+ * @returns The transliterated string with Cyrillic characters converted to Latin
  */
-export function slugifySpace(input: string): string {
+export function transliterateCyrillicToLatin(input: string): string {
   if (!input) {
     return '';
   }
 
-  let result = input.toLowerCase();
+  // Replace each Cyrillic character with its Latin equivalent using the constant map
+  return input.replace(CYRILLIC_PATTERN, (char) =>
+    CYRILLIC_TO_LATIN_MAP.has(char) ? CYRILLIC_TO_LATIN_MAP.get(char) : char
+  );
+}
 
-  // Cyrillic Unicode ranges: а-я (U+0430-U+044F), а-я (U+0451)
-  result = result.replace(/[^a-z0-9\u0430-\u044f\u0451]+/g, '-');
+/**
+ * Validate that a string contains only Latin characters, numbers, and allowed symbols.
+ * Allowed symbols are: hyphen (-), underscore (_), and space.
+ *
+ * @param input - The string to validate
+ * @returns true if the string contains only valid characters, false otherwise
+ */
+export function isValidLatinCharacters(input: string): boolean {
+  if (!input) {
+    return false;
+  }
+  // Allow: a-z, A-Z, 0-9, hyphen, underscore, and space
+  return /^[a-zA-Z0-9\-_\s]+$/.test(input);
+}
+
+/**
+ * Slugify a string to create URL-friendly slugs.
+ * First transliterates Cyrillic characters to Latin, then converts to lowercase
+ * and replaces non-alphanumeric characters with hyphens.
+ * After transliteration, validates that the result contains only Latin characters,
+ * numbers, and allowed symbols.
+ *
+ * @param input - The string to slugify
+ * @returns The slugified string, or empty string if input is empty or contains only special characters
+ */
+export function toStringify(input: string): string {
+  if (!input) {
+    return '';
+  }
+
+  // First, transliterate Cyrillic characters to Latin
+  let result = transliterateCyrillicToLatin(input);
+
+  // Convert to lowercase
+  result = result.toLowerCase();
+
+  // Replace non-alphanumeric characters (except hyphens) with hyphens
+  result = result.replace(/[^a-z0-9\-]+/g, '-');
 
   // Remove consecutive hyphens
   result = result.replace(/-+/g, '-');
@@ -205,7 +237,7 @@ export function toCapitalCase(input: string): string {
   }
 
   // First, slugify the input using slugifySpace
-  const slugified = slugifySpace(input);
+  const slugified = toStringify(input);
 
   // Handle edge case: if slugification resulted in empty string (e.g., only special characters)
   if (!slugified) {

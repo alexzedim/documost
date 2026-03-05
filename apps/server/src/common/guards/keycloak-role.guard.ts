@@ -10,12 +10,12 @@ import {
  * Example: biz-komm-ai__mySpace-admin
  *
  * @param roleString - The role string to validate
- * @param allowedPrefixes - Array of allowed prefixes
+ * @param allowedPrefix - The allowed prefix string
  * @returns true if the role string has valid format and prefix
  */
 export function isValidKeycloakRoleString(
   roleString: unknown,
-  allowedPrefixes: string[],
+  allowedPrefix: string,
 ): roleString is string {
   if (typeof roleString !== 'string' || !roleString) {
     return false;
@@ -36,8 +36,9 @@ export function isValidKeycloakRoleString(
 
   const [prefix, suffix] = parts;
 
-  // Check if prefix is in allowed list
-  if (!allowedPrefixes.includes(prefix)) {
+  const isAllowedPrefix = allowedPrefix === prefix;
+
+  if (!isAllowedPrefix) {
     return false;
   }
 

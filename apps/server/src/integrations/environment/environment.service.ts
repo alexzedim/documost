@@ -297,8 +297,11 @@ export class EnvironmentService {
     return this.configService.get<string>('KEYCLOAK_CLIENT_SECRET', '');
   }
 
-  getKeyclockRolePrefix(): string {
-    return this.configService.get<string>('KEYCLOAK_ROLE_PREFIX', '');
+  getKeyclockWikiRolePrefix(): string {
+    return (
+      this.configService.get<string>('KEYCLOAK_WIKI_ROLE_PREFIX', '') ||
+      this.configService.get<string>('KEYCLOAK_ROLE_PREFIX', '')
+    );
   }
 
   getKaspeskySsl(): string {

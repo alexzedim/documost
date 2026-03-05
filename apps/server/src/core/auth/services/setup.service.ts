@@ -47,6 +47,8 @@ export class SetupService {
   async setupPersonalSpace(user: User, workspaceId: string): Promise<void> {
     const { namespace } = extractUsernameAndSpaceName(user.name);
 
+    const spaceName = toCapitalCase(namespace);
+    const spaceSlug = toStringify(namespace);
     // Check if user already has a personal space (system space with matching name)
     const existingPersonalSpace = await this.db
       .selectFrom('spaces')
@@ -70,19 +72,19 @@ export class SetupService {
     this.logger.debug({
       message: 'Creating personal space for user',
       userId: user.id,
-      namespace: namespace,
+      namespace: spaceName,
     });
 
     await this.spaceService.createSpace(user, workspaceId, {
-      name: namespace,
-      slug: generateSlugId(),
+      name: spaceName,
+      slug: spaceSlug,
       isSystem: true,
     });
 
     this.logger.debug({
       message: 'Personal space created successfully for user',
       userId: user.id,
-      namespace: namespace,
+      namespace: spaceName,
     });
   }
 

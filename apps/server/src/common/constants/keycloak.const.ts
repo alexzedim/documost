@@ -14,9 +14,3 @@ export const KEYCLOAK_ROLE_SPLITTER = '__';
  * Example: mySpace-admin -> ['mySpace', 'admin']
  */
 export const SPACE_ROLE_SPLITTER = '-';
-
-/**
- * Allowed prefixes for Keycloak role strings
- * Roles with prefixes not in this list will be ignored
- */
-export const ALLOWED_PREFIX = ['biz-komm-ai'];

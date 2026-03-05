@@ -78,7 +78,7 @@ export class SetupService {
     await this.spaceService.createSpace(user, workspaceId, {
       name: spaceName,
       slug: spaceSlug,
-      isSystem: true,
+      isSystem: false,
     });
 
     this.logger.debug({

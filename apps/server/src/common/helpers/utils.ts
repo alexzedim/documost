@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { sanitize } from 'sanitize-filename-ts';
 import { FastifyRequest } from 'fastify';
 import * as slugify from "@sindresorhus/slugify";
@@ -113,6 +114,7 @@ export function extractUsernameAndSpaceName(userName: string): {
   namespace: string;
 } {
   const atSign = '@';
+  
   let username = userName;
   let namespace = 'Личное пространство';
 
@@ -139,8 +141,7 @@ export function buildPageSlug (pageSlugId: string, pageTitle?: string): string {
 }
 
 export function generateDeviceFingerprint(req: FastifyRequest): string {
-  const crypto = require('crypto');
-  
+
   // Extract request properties
   const ip = req.ip || req.socket?.remoteAddress || 'unknown';
   const userAgent = req.headers['user-agent'] || 'unknown';
@@ -155,4 +156,67 @@ export function generateDeviceFingerprint(req: FastifyRequest): string {
   hash.update(fingerprintString);
 
   return hash.digest('hex');
+}
+
+/**
+ * Slugify a string to create URL-friendly slugs.
+ * Supports Cyrillic (а-я, а-я), English letters (a-z), and numbers (0-9).
+ * Converts to lowercase and replaces spaces and special characters with hyphens.
+ *
+ * @param input - The string to slugify
+ * @returns The slugified string, or empty string if input is empty or contains only special characters
+ */
+export function slugifySpace(input: string): string {
+  if (!input) {
+    return '';
+  }
+
+  let result = input.toLowerCase();
+
+  // Cyrillic Unicode ranges: а-я (U+0430-U+044F), а-я (U+0451)
+  result = result.replace(/[^a-z0-9\u0430-\u044f\u0451]+/g, '-');
+
+  // Remove consecutive hyphens
+  result = result.replace(/-+/g, '-');
+
+  // Remove leading and trailing hyphens
+  result = result.replace(/^-+|-+$/g, '');
+
+  return result;
+}
+
+/**
+ * Convert a string to capital case.
+ * First slugifies the input using slugifySpace, then capitalizes the first letter,
+ * and finally replaces hyphens with spaces.
+ *
+ * @param input - The string to convert to capital case
+ * @returns The string in capital case, or empty string if input is empty or contains only special characters
+ *
+ * @example
+ * toCapitalCase("Hello World") // Returns "Hello world"
+ * toCapitalCase("Привет мир") // Returns "Привет мир"
+ * toCapitalCase("TEST SPACE") // Returns "Test space"
+ * toCapitalCase("Test@#$%^&*()World") // Returns "Test world"
+ */
+export function toCapitalCase(input: string): string {
+  if (!input) {
+    return '';
+  }
+
+  // First, slugify the input using slugifySpace
+  const slugified = slugifySpace(input);
+
+  // Handle edge case: if slugification resulted in empty string (e.g., only special characters)
+  if (!slugified) {
+    return '';
+  }
+
+  // Capitalize only the first letter of the slugified string
+  const capitalized = slugified.charAt(0).toUpperCase() + slugified.slice(1);
+
+  // Replace all hyphens with spaces
+  const result = capitalized.replace(/-/g, ' ');
+
+  return result;
 }

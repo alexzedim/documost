@@ -5,8 +5,8 @@ import Redis, { RedisOptions } from 'ioredis';
 import {
   createRetryStrategy,
   parseRedisUrl,
-  RedisConfig,
 } from '../../common/helpers';
+import { RedisConfig } from '../../integrations/redis/interfaces/redis.interface';
 
 export class WsRedisIoAdapter extends IoAdapter {
   private adapterConstructor: ReturnType<typeof createAdapter>;

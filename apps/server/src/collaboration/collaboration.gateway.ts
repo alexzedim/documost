@@ -9,8 +9,8 @@ import { EnvironmentService } from '../integrations/environment/environment.serv
 import {
   createRetryStrategy,
   parseRedisUrl,
-  RedisConfig,
 } from '../common/helpers';
+import { RedisConfig } from '../integrations/redis/interfaces/redis.interface';
 import { LoggerExtension } from './extensions/logger.extension';
 
 @Injectable()

@@ -20,6 +20,8 @@ import {
   hashPassword,
   nanoIdGen,
   extractUsernameAndSpaceName,
+  slugifySpace,
+  toCapitalCase,
 } from '../../../common/helpers';
 import { ChangePasswordDto } from '../dto/change-password.dto';
 import { MailService } from '../../../integrations/mail/mail.service';
@@ -135,64 +137,25 @@ export class AuthService {
     workspaceId: string,
   ): Promise<User> {
     // Try to find existing local user
-    let user = await this.userRepo.findByEmail(email, workspaceId, {
+    const user = await this.userRepo.findByEmail(email, workspaceId, {
       includePassword: true,
     });
 
-    // If local user exists, validate password
-    if (user) {
-      return this.validateLocalUserPassword(user, password, workspaceId);
-    }
+    // Flow 1: Found local user with password - Validate password hash directly
+    if (user && user.password !== null) {
+      const isPasswordMatch = await comparePasswordHash(password, user.password);
 
-    // If no local user, try Keycloak authentication
-    const keycloakUser = await this.authKeycloakProvider(email, password);
-    if (!keycloakUser) {
-      throw new UnauthorizedException('Email or password does not match');
-    }
-
-    // Try to find user by Keycloak ID
-    user = await this.userRepo.findById(keycloakUser.id, workspaceId);
-
-    // If user doesn't exist, create new user from Keycloak data
-    if (!user) {
-      user = await this.createUserFromKeycloak(keycloakUser, workspaceId);
-    } else {
-      // Validate user ID consistency between local and Keycloak
-      this.validateUserIdConsistency(user, keycloakUser);
-
-      // Update space memberships from Keycloak roles for existing users
-      const parsedRoles = this.parseKeycloakRole(keycloakUser.roles);
-
-      if (parsedRoles.length > 0) {
-        await this.setupUserSpaceMemberships(user, parsedRoles, workspaceId);
-        await this.syncUserSpaceRoles(user.id, workspaceId, parsedRoles);
+      if (!isPasswordMatch) {
+        throw new UnauthorizedException('Email or password does not match');
       }
+
+      await this.setupPersonalSpace(user, workspaceId);
+      return user;
     }
 
-    await this.ensurePersonalSpaceExists(user, workspaceId);
-
-    return user;
-  }
-
-  /**
-   * Validate local user password
-   * @param user - User entity with password hash
-   * @param password - Plain text password to validate
-   * @returns User if password matches
-   * @throws UnauthorizedException if password doesn't match or user has no password
-   */
-  private async validateLocalUserPassword(
-    user: User,
-    password: string,
-    workspaceId: string,
-  ): Promise<User> {
-    // If user has no password, they must use Keycloak
-    if (user.password === null) {
-      // Try Keycloak authentication for users without local password
-      const keycloakUser = await this.authKeycloakProvider(
-        user.email,
-        password,
-      );
+    // Flow 2: Found user without password - Attempt Keycloak authentication
+    if (user && user.password === null) {
+      const keycloakUser = await this.authenticateWithKeycloak(user.email, password);
 
       if (!keycloakUser) {
         throw new UnauthorizedException(
@@ -200,31 +163,44 @@ export class AuthService {
         );
       }
 
-      // Validate user ID consistency between local and Keycloak
       this.validateUserIdConsistency(user, keycloakUser);
 
-      // Update space memberships from Keycloak roles for existing users
       const parsedRoles = this.parseKeycloakRole(keycloakUser.roles);
 
       if (parsedRoles.length > 0) {
         await this.setupUserSpaceMemberships(user, parsedRoles, workspaceId);
         await this.syncUserSpaceRoles(user.id, workspaceId, parsedRoles);
       }
-   
-      await this.ensurePersonalSpaceExists(user, workspaceId);
 
+      await this.setupPersonalSpace(user, workspaceId);
       return user;
     }
 
-    const isPasswordMatch = await comparePasswordHash(password, user.password);
+    // Flow 3: Not found user - Try Keycloak authentication and create new user
+    const keycloakUser = await this.authenticateWithKeycloak(email, password);
 
-    if (!isPasswordMatch) {
+    if (!keycloakUser) {
       throw new UnauthorizedException('Email or password does not match');
     }
 
-    await this.ensurePersonalSpaceExists(user, workspaceId);
+    let authenticatedUser = await this.userRepo.findById(keycloakUser.id, workspaceId);
 
-    return user;
+    if (!authenticatedUser) {
+      authenticatedUser = await this.createUserFromKeycloak(keycloakUser, workspaceId);
+    } else {
+      this.validateUserIdConsistency(authenticatedUser, keycloakUser);
+
+      const parsedRoles = this.parseKeycloakRole(keycloakUser.roles);
+
+      if (parsedRoles.length > 0) {
+        await this.setupUserSpaceMemberships(authenticatedUser, parsedRoles, workspaceId);
+        await this.syncUserSpaceRoles(authenticatedUser.id, workspaceId, parsedRoles);
+      }
+    }
+
+    await this.setupPersonalSpace(authenticatedUser, workspaceId);
+    
+    return authenticatedUser;
   }
 
   /**
@@ -271,7 +247,7 @@ export class AuthService {
       isSystem: true,
     });
 
-    // Parse Keycloak roles and set up space memberships
+    // Parse Keycloak roles and configure space memberships
     const parsedRoles = this.parseKeycloakRole(keycloakUser.roles);
     if (parsedRoles.length > 0) {
       await this.setupUserSpaceMemberships(user, parsedRoles, workspaceId);
@@ -309,13 +285,13 @@ export class AuthService {
   }
 
   /**
-   * Ensure user has a personal space created
+   * Initialize user personal space
    * Checks if the user has a personal space (system space with name matching their username namespace)
    * Creates one if it doesn't exist
    * @param user - User entity
    * @param workspaceId - Workspace ID
    */
-  private async ensurePersonalSpaceExists(
+  private async setupPersonalSpace(
     user: User,
     workspaceId: string,
   ): Promise<void> {
@@ -375,21 +351,16 @@ export class AuthService {
 
     const parsedRoles: ParsedKeycloakRole[] = [];
 
-    const ALLOWED_PREFIX = this.environmentService.getKeyclockRolePrefix();
+    const ALLOWED_PREFIX = this.environmentService.getKeyclockWikiRolePrefix();
 
     for (const roleString of roles) {
       // Validate role string format
-      if (!isValidKeycloakRoleString(roleString, [ALLOWED_PREFIX])) {
+      if (!isValidKeycloakRoleString(roleString, ALLOWED_PREFIX)) {
         continue;
       }
 
       // Split by keycloak role splitter (e.g., '__')
-      const [prefix, suffix] = roleString.split(KEYCLOAK_ROLE_SPLITTER);
-
-      // Check if prefix is in allowed list (double-check)
-      if (![ALLOWED_PREFIX].includes(prefix)) {
-        continue;
-      }
+      const [_prefix, suffix] = roleString.split(KEYCLOAK_ROLE_SPLITTER);
 
       // Split suffix by space role splitter (e.g., '-')
       // Note: space name can contain dashes, so we need to find the last dash
@@ -435,7 +406,7 @@ export class AuthService {
   }
 
   /**
-   * Set up user space memberships based on parsed Keycloak roles
+   * Initialize user space memberships based on parsed Keycloak roles
    * Creates spaces for OWNER/ADMIN roles if they don't exist
    * @param user - User entity
    * @param parsedRoles - Array of parsed Keycloak roles
@@ -448,12 +419,20 @@ export class AuthService {
   ): Promise<void> {
     for (const parsedRole of parsedRoles) {
       try {
-        // Find space by name within workspace (case-insensitive)
+        const spaceName = toCapitalCase(parsedRole.space);
+        const spaceSlug = slugifySpace(parsedRole.space);
+        // Find space by slug within workspace (exact match)
+        // Also check name with case-insensitive matching for backward compatibility
         let space = await this.db
           .selectFrom('spaces')
           .selectAll()
           .where('workspaceId', '=', workspaceId)
-          .where('name', 'ilike', parsedRole.space)
+          .where((eb) =>
+            eb.or([
+              eb('slug', '=', spaceSlug),
+              eb('name', 'ilike', spaceName),
+            ]),
+          )
           .executeTakeFirst();
 
         if (!space) {
@@ -461,14 +440,14 @@ export class AuthService {
           if (parsedRole.role === KeycloakRole.OWNER) {
             // Create space with user as creator (will auto-add as admin)
             space = await this.spaceService.createSpace(user, workspaceId, {
-              name: parsedRole.space,
-              slug: generateSlugId(),
+              name: spaceName,
+              slug: spaceSlug,
               isSystem: true,
             });
 
             this.logger.debug({
               message: 'Created space from Keycloak role',
-              spaceName: parsedRole.space,
+              spaceName: spaceName,
               spaceId: space.id,
               userId: user.id,
             });
@@ -493,7 +472,7 @@ export class AuthService {
           });
 
         const spaceRole = this.mapKeycloakRoleToSpaceRole(parsedRole.role);
-        console.log(space, parsedRole, spaceRole, existingMembership)
+
         if (existingMembership) {
           // Update existing membership role if different
           if (existingMembership.role !== spaceRole) {
@@ -517,6 +496,7 @@ export class AuthService {
             spaceId: space.id,
             role: spaceRole,
           });
+
           this.logger.debug({
             message: 'Created space membership from Keycloak role',
             userId: user.id,
@@ -539,6 +519,7 @@ export class AuthService {
 
   /**
    * Synchronize user space roles by removing memberships that no longer exist in parsedRoles
+   * Uses slug-based matching for consistency with setupUserSpaceMemberships
    * @param userId - User ID to sync roles for
    * @param workspaceId - Workspace ID
    * @param parsedRoles - Array of parsed roles from Keycloak
@@ -549,22 +530,22 @@ export class AuthService {
     parsedRoles: ParsedKeycloakRole[],
   ): Promise<void> {
     try {
-      // Get all spaces in the workspace to map space IDs to space names
+      // Get all spaces in the workspace to map space IDs to space slugs
       const spaces = await this.db
         .selectFrom('spaces')
-        .select(['id', 'name'])
+        .select(['id', 'slug'])
         .where('workspaceId', '=', workspaceId)
         .execute();
 
-      // Create a map of space ID to space name for quick lookup
-      const spaceIdToNameMap = new Map<string, string>();
+      // Create a map of space ID to space slug for quick lookup
+      const spaceIdToSlugMap = new Map<string, string>();
       for (const space of spaces) {
-        spaceIdToNameMap.set(space.id, space.name);
+        spaceIdToSlugMap.set(space.id, space.slug);
       }
 
-      // Create a set of expected space names from parsedRoles (case-insensitive)
-      const expectedSpaceNames = new Set(
-        parsedRoles.map((role) => role.space.toLowerCase()),
+      // Create a set of expected space slugs from parsedRoles using slugifySpace
+      const expectedSpaceSlugs = new Set(
+        parsedRoles.map((role) => slugifySpace(role.space)),
       );
 
       // Get all space memberships for the user in the workspace
@@ -576,10 +557,10 @@ export class AuthService {
 
       // Find and remove memberships that are not in the expected roles
       for (const membership of memberships) {
-        const spaceName = spaceIdToNameMap.get(membership.spaceId);
+        const spaceSlug = spaceIdToSlugMap.get(membership.spaceId);
 
-        // If space exists in workspace and its name is not in expected roles, remove membership
-        if (spaceName && !expectedSpaceNames.has(spaceName.toLowerCase())) {
+        // If space exists in workspace and its slug is not in expected roles, remove membership
+        if (spaceSlug && !expectedSpaceSlugs.has(spaceSlug)) {
           await this.spaceMemberRepo.removeSpaceMemberById(
             membership.id,
             membership.spaceId,
@@ -589,7 +570,7 @@ export class AuthService {
             message: 'Removed space membership not present in Keycloak roles',
             userId: userId,
             spaceId: membership.spaceId,
-            spaceName: spaceName,
+            spaceSlug: spaceSlug,
             membershipId: membership.id,
           });
         }
@@ -781,11 +762,11 @@ export class AuthService {
     return { token };
   }
 
-  async authKeycloakProvider(
+  async authenticateWithKeycloak(
     email: string,
     password: string,
   ): Promise<KeycloakAuthUser | undefined> {
-    const logTag = this.authKeycloakProvider.name;
+    const logTag = this.authenticateWithKeycloak.name;
 
     const keycloak = this.environmentService.getKeycloakUrl();
     const realm = this.environmentService.getKeycloakRealm();
@@ -819,25 +800,29 @@ export class AuthService {
 
       const tokens: AuthResponse = tokenResponse.data;
 
-      // Optionally, decode token to get user info
       const keycloakUser = await this.getUserInfoFromToken(tokens.access_token);
 
       if (!keycloakUser) {
-        throw new NotFoundException('Keycloak User does not exists!');
+        throw new NotFoundException('User in keycloak space does not returned!');
       }
+
+      this.logger.log({
+        logTag,
+        keycloakUser,
+      });
 
       const externalId = keycloakUser.id;
       const externalEmail = keycloakUser.email;
 
       if (!externalId || !externalEmail) {
-        throw new BadRequestException('Email not found in Keycloak');
+        throw new BadRequestException('User is exists in keycloak space, but has no valid data');
       }
-      console.log(keycloakUser);
+
       return keycloakUser;
     } catch (error: any) {
       this.logger.log({
         logTag,
-        message: 'check keycloak integration',
+        message: 'Keycloak auth integration',
         error: error.status,
       });
 

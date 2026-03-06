@@ -411,9 +411,8 @@ export class PageController {
 
       const pageIdsFromSpace =
         await this.pageService.getUserAccessiblePageIds(spaceId, true);
-      const pageIdsForEachSpace = pageIdsFromSpace.map((pageId) => pageId.id);
-
-      pageIdsForEachSpace.forEach((id) => pageIds.add(id));
+      
+      pageIdsFromSpace.forEach((page) => pageIds.add(page.id));
     }
 
     const pageIdsArray = Array.from(pageIds);
@@ -431,16 +430,15 @@ export class PageController {
     const pageIds = new Set<string>();
 
     for (const spaceId of spaceIds) {
-      const ability = await this.spaceAbility.createForUser(user, spaceId);
-      if (ability.cannot(SpaceCaslAction.Read, SpaceCaslSubject.Page)) {
-        continue;
-      }
+      // const ability = await this.spaceAbility.createForUser(user, spaceId);
+      // if (ability.cannot(SpaceCaslAction.Read, SpaceCaslSubject.Page)) {
+      //   continue;
+      // }
 
       const pageIdsFromSpace =
         await this.pageService.getUserAccessiblePageIds(spaceId);
-      const pageIdsForEachSpace = pageIdsFromSpace.map((pageId) => pageId.id);
-
-      pageIdsForEachSpace.forEach((id) => pageIds.add(id));
+      
+      pageIdsFromSpace.forEach((page) => pageIds.add(page.id));
     }
 
     return {
